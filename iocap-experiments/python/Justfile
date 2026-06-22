@@ -1,0 +1,67 @@
+set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
+
+default:
+    @just --list
+
+basic:
+    uv run ./basic_nvme_queue.py ./nvme_queue_results/basic/ --seed 0 --trace queue00
+
+bench-all:
+    just run in_order_q08 1
+    just run in_order_q32 2
+    just run in_order_q1024 3
+    just run out_order_q32_nq1 4
+    just run in_order_fast_q32 5
+    just run in_order_slow_q32 6
+    just run out_order_q04_nq8 7
+    just run out_order_haas_q04 8
+    just run out_order_haas_q16 9
+    just run out_order_haas_q32 10
+    just run out_order_haas_q05 11
+    just run out_order_haas_q08 12
+    just run out_order_haas_q09 13
+    just run out_order_q128_nq1_unsaturated 14
+    just run out_order_q16_nq8_unsaturated 15
+    just run out_order_haas_q10 16
+
+trace-ooo:
+    uv run ./basic_nvme_queue.py ./nvme_queue_results/out_order_q32_nq1/ --config ./queue_config_out_order_q32_nq1.toml --seed 4 --trace queue00
+
+trace-haas:
+    uv run ./basic_nvme_queue.py ./nvme_queue_results/out_order_haas_q04/ --config ./queue_config_out_order_haas_q04.toml --seed 8 --trace queue00
+    uv run ./basic_nvme_queue.py ./nvme_queue_results/out_order_haas_q16/ --config ./queue_config_out_order_haas_q16.toml --seed 9 --trace queue00
+
+run-haas:
+    just run out_order_haas_q04 8
+    just run out_order_haas_q16 9
+    just run out_order_haas_q32 10
+    just run out_order_haas_q05 11
+    just run out_order_haas_q08 12
+    just run out_order_haas_q09 13
+    just run out_order_haas_q10 16
+
+run-ooo:
+    just run out_order_q32_nq1 4
+    just run out_order_q04_nq8 7
+    just run out_order_q128_nq1_unsaturated 14
+    just run out_order_q16_nq8_unsaturated 15
+
+run-in-order:
+    just run in_order_q08 1
+    just run in_order_q32 2
+    just run in_order_q1024 3
+    just run in_order_fast_q32 5
+    just run in_order_slow_q32 6
+
+[unix]
+run config seed *args:
+    @mkdir -p ./nvme_queue_results/{{config}}/
+    uv run ./basic_nvme_queue.py ./nvme_queue_results/{{config}}/ --config ./queue_config_{{config}}.toml --seed {{seed}} {{args}}
+
+[windows]
+run config seed *args:
+    @New-Item -ItemType Directory -Force -Path ./nvme_queue_results/{{config}}/ | Out-Null
+    uv run ./basic_nvme_queue.py ./nvme_queue_results/{{config}}/ --config ./queue_config_{{config}}.toml --seed {{seed}} {{args}}
+
+trace config seed:
+    just run {{config}} {{seed}} --trace queue00 completer

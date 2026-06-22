@@ -1,0 +1,45 @@
+default:
+    @just --list
+
+jupyter:
+    uv run --with jupyter jupyter lab
+
+run-cap-scan:
+    #!/bin/bash
+    cargo run --bin scan -- >./rust_caps_scanner/results/format_results.toml
+
+show-cap-scan mode="bl":
+    uv run python ./python/rust_caps_scanner_graph.py --mode {{mode}} ./rust_caps_scanner/results/format_results.toml
+
+gen-2026-tests:
+    # n = how many of each 'category'. --gen-0cav creates ~64 categories, one per pow2 box, of valid cap. --gen-all-edge-cases creates one category per edge case.
+    cargo run --bin gen_rand_csv -- --gen-0cav --gen-1cav --gen-2cav -n 10 --seed 0 -o ./tests_cap2024_11_2026_04/valid_decode_valid_sig_all.txt
+    cargo run --bin gen_rand_csv -- --gen-0cav --gen-1cav --gen-2cav -n 100 --gen-all-edge-cases --seed 1 -o ./tests_cap2024_11_2026_04/valid_sig_all_edge_cases.txt
+    cargo run --bin gen_rand_csv -- -n 100 --gen-all-edge-cases --seed 2 -o ./tests_cap2024_11_2026_04/valid_sig_only_edge_cases.txt
+    cargo run --bin gen_rand_csv -- -n 10000 --gen-edge 6 --gen-edge 7 --seed 3 -o ./tests_cap2024_11_2026_04/valid_sig_only_new_edge_cases.txt
+
+validate-2026:
+    #!/bin/bash
+    uv run ./python/cap2024_11_decoder_test.py ./tests_cap2024_11_2026_04/valid_sig_only_new_edge_cases.txt
+    case $? in
+        0)
+            echo "Cap2024_11 basic should have failed"; exit 1; ;;
+        *)
+            echo "Cap2024_11 basic failed, as expected"; ;;
+    esac
+
+    uv run ./python/cap2024_11_2026_04_decoder_test.py ./tests_cap2024_11_2026_04/valid_sig_only_new_edge_cases.txt
+    case $? in
+        0)
+            echo "Cap2024_11 2026_04 didn't fail!"; ;;
+        *)
+            echo "Cap2024_11 2026_04 failed???"; exit 1; ;;
+    esac
+
+    uv run ./python/cap2024_11_2026_04_decoder_test.py ./tests_cap2024_11_2026_04/valid_sig_all_edge_cases.txt
+    case $? in
+        0)
+            echo "Cap2024_11 2026_04 didn't fail!"; exit 0; ;;
+        *)
+            echo "Cap2024_11 2026_04 failed???"; exit 1; ;;
+    esac

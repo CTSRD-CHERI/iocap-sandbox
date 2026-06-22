@@ -1,0 +1,3 @@
+[submodule "iocap-experiments/cheri-compressed-cap"]
+	path = iocap-experiments/cheri-compressed-cap
+	url = ssh://git@github.com/theturboturnip/cheri-compressed-cap

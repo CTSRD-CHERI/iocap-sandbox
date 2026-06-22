@@ -1,0 +1,30 @@
+default:
+    @just --list
+
+# Install necessary rust cross-compilation targets
+install-targets:
+    rustup target add x86_64-unknown-linux-gnu \
+        x86_64-unknown-none \
+        riscv64imac-unknown-none-elf \
+        aarch64-unknown-none \
+        --toolchain nightly
+
+version := "0.7"
+
+_copy_results target:
+    @mkdir -p vendor-{{version}}/{{target}}
+    cp ./librust_caps_c.h ../target/{{target}}/release/librust_caps_c.a ./vendor-{{version}}/{{target}}/
+
+# Build static libraries for x86, riscv64gc, aarch64 - all for unknown-none targets
+# Requires nightly, because cbindgen does
+build-all:
+    cargo +nightly build --release --target=x86_64-unknown-linux-gnu --features std,generate-c
+    cargo +nightly build --release --target=x86_64-unknown-none --no-default-features --features generate-c
+    cargo +nightly build --release --target=riscv64imac-unknown-none-elf --no-default-features --features generate-c
+    cargo +nightly build --release --target=aarch64-unknown-none --no-default-features --features generate-c
+
+vendor-all:
+    just _copy_results x86_64-unknown-linux-gnu
+    just _copy_results x86_64-unknown-none
+    just _copy_results riscv64imac-unknown-none-elf
+    just _copy_results aarch64-unknown-none

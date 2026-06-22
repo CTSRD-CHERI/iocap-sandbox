@@ -1,0 +1,18 @@
+[package]
+name = "rust_caps_scanner"
+version = "0.1.0"
+edition = "2021"
+description = "Crate that pulls in lots of capability types and does sweeps to find precision stats. Intended to be run directly, not compiled for embedded targets, hence std always used"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rust_caps = { path = "../rust_caps", features = ["std"], default-features = false }
+rust-cheri-compressed-cap = { path = "../cheri-compressed-cap/test/rust-cheri-compressed-cap" }
+packed_struct = { version = "0.10.1", features = ["byte_types_256"] }
+assert_hex =  { version = "0.2.2" }
+dbg_hex = { version = "0.1.1" }
+thiserror = { version = "1.0.44" }
+bitutils = { version = "3.0.1" }
+chrono = "0.4.44"
+nonmax = "0.5.5"

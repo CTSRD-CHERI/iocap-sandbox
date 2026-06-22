@@ -1,0 +1,122 @@
+use dbg_hex::dbg_hex;
+use rust_cheri_compressed_cap::{caps::cheri256, CcxCap, CompressedCapability};
+type Cap = cheri256::Cap;
+
+use crate::{
+    caps::BasicCustomCap,
+    scans::{
+        basic_cap::{self, BaseAlign, LengthPrecision},
+        LogScan,
+    },
+};
+
+impl BasicCustomCap for Cap {
+    const BASE_WIDTH: u32 = 64;
+
+    fn check_bits(&self) {}
+
+    fn new_unchecked(base: u64, len: u128) -> Self {
+        let len: u64 = len.try_into().expect("Cheri256 only supports up to u64::MAX - 1");
+        let mut cap = Cap::make_max_perms_cap(0, base, !0u64);
+        cap.set_otype(Cap::OTYPE_UNSEALED);
+        cap.set_bounds_unchecked(len);
+        assert!(cap.tag());
+        cap
+    }
+
+    fn base(&self) -> u64 {
+        Cap::base(&self)
+    }
+
+    fn len(&self) -> u128 {
+        self.length()
+    }
+
+    fn len_precision(&self) -> u32 {
+        0
+    }
+}
+
+pub const CHERI256_BASE_ALIGN: BaseAlign<Cap> =
+    basic_cap::BaseAlign::<Cap>::new(!0, Some(2u128 << 64));
+pub const CHERI256_LENGTH_PRECISION: LengthPrecision<Cap> =
+    basic_cap::LengthPrecision::<Cap>::new(!0, Some(2u128 << 64));
+
+pub struct BaseAlign_Scan;
+impl LogScan for BaseAlign_Scan {
+    type T = (u64, u32);
+
+    const HEADER: &'static str = "intended_base\tintended_len\tbase_align";
+
+    fn apply_f(&self, x: u128) -> Self::T {
+        // 63 low bits set, any downwards alignment can be counted via the bottom bits
+        const BASE_ADDR: u64 = !0;
+        let mut base = BASE_ADDR;
+        let length = x;
+        // TODO this whole setup is a little odd and breaks the base precision metric near the start?
+        // or actually, no! think about it.
+        // The CHERI model requires moving from the almighty capability, which is 0-(1 << 64).
+        // You can't exceed the almighty bounds, so once your target length exceeds (1 << 64) - (min align)
+        // you are effectively forced into the almighty capability again.
+        let mut top = base as u128 + length as u128;
+        while top >= (1u128 << 64) {
+            base = base >> 1;
+            top = base as u128 + length as u128;
+        }
+        if base == 0 {
+            base = 1;
+        }
+        let mut cap = Cap::make_max_perms_cap(0, base, !0u64);
+        // dbg_hex!(cap.base(), cap.length());
+        cap.set_otype(Cap::OTYPE_UNSEALED);
+        // dbg_hex!(cap);
+        let exact = cap.set_bounds_unchecked(length as u64);
+        // dbg_hex!(cap);
+        assert!(cap.tag());
+        // dbg_hex!(exact, cap.tag(), cap.base(), cap.length());
+        (base, cap.base().trailing_zeros())
+    }
+
+    fn accept_result(&mut self, x: u128, result: &Self::T) {
+        println!("0x{:016x}\t0x{:016x}\t{}", result.0, x, result.1);
+    }
+}
+
+pub struct LengthPrecision_Scan(pub u64);
+impl LogScan for LengthPrecision_Scan {
+    type T = (u64, u8);
+
+    const HEADER: &'static str = "intended_base\tintended_len\tlen_align";
+
+    fn apply_f(&self, x: u128) -> Self::T {
+        let mut base = self.0;
+        let length = x;
+        // TODO this whole setup is a little odd and breaks the base precision metric near the start?
+        // or actually, no! think about it.
+        // The CHERI model requires moving from the almighty capability, which is 0-(1 << 64).
+        // You can't exceed the almighty bounds, so once your target length exceeds (1 << 64) - (min align)
+        // you are effectively forced into the almighty capability again.
+        let mut top = base as u128 + length as u128;
+        while top >= (1u128 << 64) {
+            base = base >> 1;
+            top = base as u128 + length as u128;
+        }
+        if base == 0 {
+            base = 1;
+        }
+        let mut cap = Cap::make_max_perms_cap(0, base, !0u64);
+        // dbg_hex!(cap.base(), cap.length());
+        cap.set_otype(Cap::OTYPE_UNSEALED);
+        // dbg_hex!(cap);
+        let exact = cap.set_bounds_unchecked(length as u64);
+        assert!(cap.tag());
+        (
+            cap.base(),
+            0, // todo!("Find way to track length precision from scan")
+        )
+    }
+
+    fn accept_result(&mut self, x: u128, result: &Self::T) {
+        println!("0x{:016x}\t0x{:016x}\t{}", result.0, x, result.1);
+    }
+}

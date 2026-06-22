@@ -1,0 +1,7 @@
+histogram_r = [10100, 10100] # constant t
+iops = 100_000 # 1E5 ops per second => 1E9ns per second/1E5 ops per second = 1E4ns per op. make each op take longer than that to ensure the queue fills up and leases aren't left unfilled
+histogram_w = [1, 1] # unused
+read_chance = 100
+q_ops = 32
+queues = 1
+iocap_l_ops = [1, 2, 4, 8, 16, 32]

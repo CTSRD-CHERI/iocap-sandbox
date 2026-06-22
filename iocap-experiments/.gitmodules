@@ -1,0 +1,6 @@
+[submodule "hardware/opentitan"]
+	path = hardware/opentitan
+	url = https://github.com/lowRISC/opentitan
+[submodule "cheri-compressed-cap"]
+	path = cheri-compressed-cap
+	url = https://github.com/theturboturnip/cheri-compressed-cap
