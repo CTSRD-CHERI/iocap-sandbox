@@ -1,3 +1,42 @@
 [submodule "iocap-experiments/cheri-compressed-cap"]
 	path = iocap-experiments/cheri-compressed-cap
 	url = ssh://git@github.com/theturboturnip/cheri-compressed-cap
+[submodule "de10pro-cheri-bgas"]
+	path = de10pro-cheri-bgas
+	url = https://github.com/CTSRD-CHERI/de10pro-cheri-bgas
+[submodule "DE10Pro-softcore-devicetree"]
+	path = DE10Pro-softcore-devicetree
+	url = https://github.com/CTSRD-CHERI/DE10Pro-softcore-devicetree
+[submodule "elfmanip"]
+	path = elfmanip
+	url = https://github.com/theturboturnip/elfmanip
+[submodule "fmem-uart"]
+	path = fmem-uart
+	url = https://github.com/CTSRD-CHERI/fmem-uart
+[submodule "fmem"]
+	path = fmem
+	url = https://github.com/CTSRD-CHERI/fmem/
+[submodule "konata"]
+	path = konata
+	url = https://github.com/theturboturnip/konata.git
+[submodule "os-cheribsd/cheribsd"]
+	path = os-cheribsd/cheribsd
+	url = https://github.com/theturboturnip/cheribsd
+[submodule "os-cheribsd/cheribuild"]
+	path = os-cheribsd/cheribuild
+	url = https://github.com/CTSRD-CHERI/cheribuild
+[submodule "os-cheribsd/cheri-fio"]
+	path = os-cheribsd/cheri-fio
+	url = https://github.com/theturboturnip/cheri-fio
+[submodule "os-cheribsd/qemu"]
+	path = os-cheribsd/qemu
+	url = https://github.com/CTSRD-CHERI/qemu
+[submodule "os-freertos/cheribuild"]
+	path = os-freertos/cheribuild
+	url = https://github.com/CTSRD-CHERI/cheribuild/
+[submodule "os-freertos/freertos"]
+	path = os-freertos/freertos
+	url = git@github.com:CTSRD-CHERI/FreeRTOS
+[submodule "tinyemu-virtio"]
+	path = tinyemu-virtio
+	url = https://github.com/theturboturnip/tinyemu-virtio
