@@ -5,16 +5,16 @@
 	path = de10pro-cheri-bgas
 	url = https://github.com/CTSRD-CHERI/de10pro-cheri-bgas
 [submodule "DE10Pro-softcore-devicetree"]
-	path = DE10Pro-softcore-devicetree
+	path = soc/fpga/DE10Pro-softcore-devicetree
 	url = https://github.com/CTSRD-CHERI/DE10Pro-softcore-devicetree
 [submodule "elfmanip"]
-	path = elfmanip
+	path = os-freertos/elfmanip
 	url = https://github.com/theturboturnip/elfmanip
 [submodule "fmem-uart"]
-	path = fmem-uart
+	path = soc/sim/fmem-uart
 	url = https://github.com/CTSRD-CHERI/fmem-uart
 [submodule "fmem"]
-	path = fmem
+	path = soc/fpga/fmem
 	url = https://github.com/CTSRD-CHERI/fmem/
 [submodule "konata"]
 	path = konata
