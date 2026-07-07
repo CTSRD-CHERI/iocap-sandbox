@@ -8,7 +8,7 @@
 	path = soc/fpga/DE10Pro-softcore-devicetree
 	url = https://github.com/CTSRD-CHERI/DE10Pro-softcore-devicetree
 [submodule "elfmanip"]
-	path = os-freertos/elfmanip
+	path = soc/sim/elfmanip
 	url = https://github.com/theturboturnip/elfmanip
 [submodule "fmem-uart"]
 	path = soc/sim/fmem-uart

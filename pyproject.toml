@@ -1,0 +1,23 @@
+[project]
+name = "iocap-sandbox"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pyelftools>=0.32",
+    "pyyaml>=6.0.2",
+
+    # For iocap-experiments
+    "jupyterlab>=4.3.6",
+    "matplotlib>=3.10.1",
+    "mplcursors>=0.7.1",
+    "numpy>=2.2.4",
+    "pandas>=2.2.3",
+    "pyqt6>=6.11.0",
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "mypy>=1.15.0",
+]
