@@ -8,7 +8,7 @@ Please contact [samuel.stark@cl.cam.ac.uk](mailto:samuel.stark@cl.cam.ac.uk) if 
 This repository contains many submodules, which hold most of the relevant code.
 If checking out all content, I recommend using `--depth=1` to avoid downloading redundant data, especially from CheriBSD which is a large repository.
 
-```
+```bash
 $ git submodule update --init --recursive --depth=1
 ```
 
@@ -28,6 +28,7 @@ Other dependencies can be installed via your system package manager - see the `J
 ```bash
 # Basic CHERIBuild dependencies
 $ apt install autoconf automake libtool pkg-config clang bison cmake mercurial ninja-build samba flex texinfo time libglib2.0-dev libpixman-1-dev libarchive-dev libarchive-tools libbz2-dev libattr1-dev libcap-ng-dev libexpat1-dev libgmp-dev bc tzdata
+# Others... see Justfile
 $ apt install libelf-dev
 $ apt install libfuse3-dev
 $ apt install fusefat dosfstools
@@ -66,13 +67,19 @@ This is not fast enough to be truly useful, but is a fine litmus test to make su
 $ just rebuild_freertos_sim     # Build CheriFreeRTOS for simulation
 $ just build_de10_bluesim       # Build a Bluespec simulation of the DE10 SoC
 $ just run-de10-sim-freertos    # Run the Bluespec simulation using the FreeRTOS ELF binary
-# once you are finished, hit Ctrl-C to interrupt - the simulation will take ~1 second to cleanly shut down.
+```
 
+Leave this running and open another terminal window.
+You can watch the output from the UART with another command.
+
+```bash
 # (in another window)
 $ just watch-de10-sim           # watch the RVFI log of instructions executed by the DE10 SoC
 # or
 $ just watch-de10-uart          # watch the UART log of prints from CheriFreeRTOS
 ```
+
+Once you are finished, hit Ctrl-C to interrupt - the simulation will take ~1 second to cleanly shut down.
 
 ## Chapter 6 - Run CheriFreeRTOS on QEMU
 
@@ -85,9 +92,9 @@ $ just build_qemu                  # Build QEMU
 $ just run-qemu-freertos           # Run CheriFreeRTOS inside a QEMU that has IOCap-enabled VirtIO devices
 # or
 $ just run-qemu-freertos-noiocap   # Run CheriFreeRTOS inside a QEMU that has VirtIO devices *without IOCap support*.
-
-# While it's running, visit http://localhost:2222/freertos.html to get a webpage served from IOCaps!
 ```
+
+While it's running, visit <http://localhost:2222/freertos.html> to get a webpage served from IOCaps!
 
 ## Chapter 6 - Run CheriBSD on QEMU
 
@@ -99,9 +106,9 @@ $ just build_cheribsd_qemu
 $ just run-qemu-cheribsd
 # or
 $ just run-qemu-cheribsd-noiocap
-
-# TODO what should you do once inside?
 ```
+
+TODO what should you do once inside?
 
 ## Chapter 6 - Generate CheriBSD Diff
 
