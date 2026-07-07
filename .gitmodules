@@ -2,7 +2,7 @@
 	path = iocap-experiments/cheri-compressed-cap
 	url = ssh://git@github.com/theturboturnip/cheri-compressed-cap
 [submodule "de10pro-cheri-bgas"]
-	path = de10pro-cheri-bgas
+	path = soc/de10pro-cheri-bgas
 	url = https://github.com/CTSRD-CHERI/de10pro-cheri-bgas
 [submodule "DE10Pro-softcore-devicetree"]
 	path = soc/fpga/DE10Pro-softcore-devicetree
@@ -29,7 +29,7 @@
 	path = os-cheribsd/cheri-fio
 	url = https://github.com/theturboturnip/cheri-fio
 [submodule "os-cheribsd/qemu"]
-	path = os-cheribsd/qemu
+	path = qemu
 	url = https://github.com/CTSRD-CHERI/qemu
 [submodule "os-freertos/cheribuild"]
 	path = os-freertos/cheribuild
