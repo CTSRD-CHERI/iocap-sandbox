@@ -2,7 +2,7 @@
 	path = iocap-experiments/cheri-compressed-cap
 	url = ssh://git@github.com/theturboturnip/cheri-compressed-cap
 [submodule "de10pro-cheri-bgas"]
-	path = soc/de10pro-cheri-bgas
+	path = soc/common/de10pro-cheri-bgas
 	url = https://github.com/CTSRD-CHERI/de10pro-cheri-bgas
 [submodule "DE10Pro-softcore-devicetree"]
 	path = soc/fpga/DE10Pro-softcore-devicetree
@@ -38,5 +38,5 @@
 	path = os-freertos/freertos
 	url = git@github.com:CTSRD-CHERI/FreeRTOS
 [submodule "tinyemu-virtio"]
-	path = tinyemu-virtio
+	path = soc/common/tinyemu-virtio
 	url = https://github.com/theturboturnip/tinyemu-virtio
