@@ -1,0 +1,25 @@
+Logging in as root...
+
+# sysctl dev.iocap_keymngr
+dev.iocap_keymngr.0.disable_encrypt: 0
+dev.iocap_keymngr.0.bad_read: 0
+dev.iocap_keymngr.0.good_read: 6953
+dev.iocap_keymngr.0.bad_write: 0
+dev.iocap_keymngr.0.good_write: 6547
+
+# sysctl dev.iocap_keymngr.0.disable_encrypt=1
+dev.iocap_keymngr.0.disable_encrypt: 0 -> 1
+
+QEMU: check_signature (data 817fb01f) (sig 817fb01f) for key_id 1
+    (689c9560) failed: CCapResult_Decode_InvalidSignature
+
+# ./bench/bench.sh
++ : 'Confirm disk exists via dev'
++ test -c /dev/vtbd-iocap1
++ : 'Confirm iocap is functional'
++ sysctl dev.iocap_keymngr
+dev.iocap_keymngr.0.disable_encrypt: 1
+dev.iocap_keymngr.0.bad_read: 25
+dev.iocap_keymngr.0.good_read: 7040
+dev.iocap_keymngr.0.bad_write: 10
+dev.iocap_keymngr.0.good_write: 6603

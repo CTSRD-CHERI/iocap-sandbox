@@ -1,0 +1,111 @@
+timestamp = "2026-06-02_17:05:26+00:00"
+generated_by = "gen_report.py"
+git_hash = "3067c5d\n"
+
+[single_checker_null]
+dut = "mkSingleChecker3_null"
+seed = 28
+fit_timestamp = "2026-06-01_01:12:07+00:00"
+sta_timestamp = "2026-06-01_01:14:44+00:00"
+fmax = "766.28"
+luts_total = 311
+luts_dut = 110
+luts_input_harness = 105
+luts_output_harness = 96
+luts_device_max = 933120
+
+[single_checker_1per]
+dut = "mkSingleChecker3_1percycle"
+seed = 9
+fit_timestamp = "2026-06-01_02:38:03+00:00"
+sta_timestamp = "2026-06-01_02:40:54+00:00"
+fmax = "265.04"
+luts_total = 3171
+luts_dut = 2990
+luts_input_harness = 128
+luts_output_harness = 54
+luts_device_max = 933120
+
+[single_checker_2per]
+dut = "mkSingleChecker3_2percycle"
+seed = 24
+fit_timestamp = "2026-06-01_08:06:17+00:00"
+sta_timestamp = "2026-06-01_08:09:33+00:00"
+fmax = "212.36"
+luts_total = 4179
+luts_dut = 3989
+luts_input_harness = 130
+luts_output_harness = 59
+luts_device_max = 933120
+
+[full_exposer_0checkers]
+dut = "mkCombinedIOCapExposerV6_0pool_KeyManager2V1_64_Tb"
+seed = 17
+fit_timestamp = "2026-06-01_11:10:19+00:00"
+sta_timestamp = "2026-06-01_11:13:30+00:00"
+fmax = "187.06"
+luts_total = 4645
+luts_dut = 4410
+luts_input_harness = 79
+luts_output_harness = 155
+luts_device_max = 933120
+
+[full_exposer_1checkers_2per_64]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_1pool_2percycle_KeyManager2V1_64_Tb"
+seed = 27
+fit_timestamp = "2026-06-01_16:54:23+00:00"
+sta_timestamp = "2026-06-01_16:58:10+00:00"
+fmax = "189.93"
+luts_total = 13428
+luts_dut = 13231
+luts_input_harness = 74
+luts_output_harness = 122
+luts_device_max = 933120
+
+[full_exposer_2checkers_2per_64]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_2pool_2percycle_KeyManager2V1_64_Tb"
+seed = 18
+fit_timestamp = "2026-06-01_20:31:59+00:00"
+sta_timestamp = "2026-06-01_20:36:16+00:00"
+fmax = "186.46"
+luts_total = 20638
+luts_dut = 20459
+luts_input_harness = 68
+luts_output_harness = 111
+luts_device_max = 933120
+
+[full_exposer_3checkers_2per_64]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_3pool_2percycle_KeyManager2V1_64_Tb"
+seed = 24
+fit_timestamp = "2026-06-02_03:10:40+00:00"
+sta_timestamp = "2026-06-02_03:15:35+00:00"
+fmax = "183.82"
+luts_total = 28278
+luts_dut = 28108
+luts_input_harness = 68
+luts_output_harness = 100
+luts_device_max = 933120
+
+[full_exposer_4checkers_2per_64]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_4pool_2percycle_KeyManager2V1_64_Tb"
+seed = 24
+fit_timestamp = "2026-06-02_09:07:12+00:00"
+sta_timestamp = "2026-06-02_09:11:51+00:00"
+fmax = "179.37"
+luts_total = 35919
+luts_dut = 35723
+luts_input_harness = 68
+luts_output_harness = 126
+luts_device_max = 933120
+
+[full_exposer_5checkers_2per_64]
+dut = "mkCombinedIOCapExposerV6_blockinvalid_5pool_2percycle_KeyManager2V1_64_Tb"
+seed = 27
+fit_timestamp = "2026-06-02_16:09:07+00:00"
+sta_timestamp = "2026-06-02_16:14:17+00:00"
+fmax = "174.55"
+luts_total = 43210
+luts_dut = 43032
+luts_input_harness = 67
+luts_output_harness = 109
+luts_device_max = 933120

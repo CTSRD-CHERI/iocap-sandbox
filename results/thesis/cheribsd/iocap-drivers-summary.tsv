@@ -1,0 +1,5 @@
+iocap	lines-iocap	original	lines	diff	diff-nosed
+sys/dev/virtio/virtio_ring_iocap.h	66	sys/dev/virtio/virtio_ring.h	180	9	128
+sys/dev/virtio/virtqueue_iocap.h	98	sys/dev/virtio/virtqueue.h	110	7	62
+sys/dev/virtio/virtqueue_iocap.c	956	sys/dev/virtio/virtqueue.c	880	121	242
+sys/dev/virtio/block/virtio_blk_iocap.c	1780	sys/dev/virtio/block/virtio_blk.c	1687	130	559

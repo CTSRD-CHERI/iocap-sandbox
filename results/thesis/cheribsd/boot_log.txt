@@ -1,0 +1,30 @@
+...
+crypto: <crypto core>
+ofwbus0: <Open Firmware Device Tree>
+simplebus0: <Flattened device tree simple bus> on ofwbus0
+iocap_keymngr0: <IOCap Key Manager> mem 0x50000000-0x500fffff on
+    simplebus0
+iocap_keymngr0: w00t attached to iocap!!! parent: 0xffffffd0073efa80
+iocap_keymngr0: perf counters: 0 26926354 0 0
+sbi0: <RISC-V Supervisor Binary Interface>
+...
+virtio_mmio1: <VirtIO MMIO adapter> mem 0x40001000-0x40001fff irq 5 on
+    iocap_keymngr0
+virtio_mmio2: <VirtIO MMIO adapter> mem 0x40002000-0x40002fff irq 6 on
+    iocap_keymngr0
+vtblk_iocap0: <VirtIO Block Adapter (IOCap)> on virtio_mmio2
+virtio_mmio2: host features: 0x20100000004 <IOCap,Version1,MaxNumSegs>
+virtio_mmio2: negotiated features: 0x20100000004 <IOCap,Version1,
+    MaxNumSegs>
+iocap_keymngr0: Allocated the following 1 IOCap key ids
+iocap_keymngr0: key #0
+virtio_mmio2: virtqueue 0 (vtblk_iocap0 request) requested indirect
+    descriptors but not negotiated
+iocap_keymngr0: Allocated the following 4 IOCap key ids
+iocap_keymngr0: key #1
+iocap_keymngr0: key #2
+iocap_keymngr0: key #3
+iocap_keymngr0: key #4
+iocap_keymngr0: Assuming synchronous revocation
+vtblk_iocap0: 102MB (208963 512 byte sectors)
+...

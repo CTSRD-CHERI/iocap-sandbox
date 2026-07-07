@@ -1,0 +1,1502 @@
+
+
+comparing sys/dev/virtio/virtio_ring_iocap.h sys/dev/virtio/virtio_ring.h
+
+--- sys/dev/virtio/virtio_ring.h	2024-05-03 16:10:47.620374390 +0100
++++ /dev/fd/63	2026-06-17 19:38:06.633782221 +0100
+@@ -1,180 +1,67 @@
+-/*-
+- * SPDX-License-Identifier: BSD-3-Clause
+- *
+- * Copyright Rusty Russell IBM Corporation 2007.
+- *
+- * This header is BSD licensed so anyone can use the definitions to implement
+- * compatible drivers/servers.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions
+- * are met:
+- * 1. Redistributions of source code must retain the above copyright
+- *    notice, this list of conditions and the following disclaimer.
+- * 2. Redistributions in binary form must reproduce the above copyright
+- *    notice, this list of conditions and the following disclaimer in the
+- *    documentation and/or other materials provided with the distribution.
+- * 3. Neither the name of IBM nor the names of its contributors
+- *    may be used to endorse or promote products derived from this software
+- *    without specific prior written permission.
+- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL IBM OR CONTRIBUTORS BE LIABLE
+- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+- * SUCH DAMAGE.
+- */
+-
++// Minorly based on virtio_ring.h
+ #ifndef VIRTIO_RING_H
+ #define	VIRTIO_RING_H
+ 
+-/* This marks a buffer as continuing via the next field. */
+-#define VRING_DESC_F_NEXT       1
+-/* This marks a buffer as write-only (otherwise read-only). */
+-#define VRING_DESC_F_WRITE      2
+-/* This means the buffer contains a list of buffer descriptors. */
+-#define VRING_DESC_F_INDIRECT	4
+-
+-/* The Host uses this in used->flags to advise the Guest: don't kick me
+- * when you add a buffer.  It's unreliable, so it's simply an
+- * optimization.  Guest will still kick if it's out of buffers. */
+-#define VRING_USED_F_NO_NOTIFY  1
+-/* The Guest uses this in avail->flags to advise the Host: don't
+- * interrupt me when you consume a buffer.  It's unreliable, so it's
+- * simply an optimization.  */
+-#define VRING_AVAIL_F_NO_INTERRUPT      1
+-
+-/* VirtIO ring descriptors: 16 bytes.
+- * These can chain together via "next". */
+-struct vring_desc {
+-        /* Address (guest-physical). */
+-        uint64_t addr;
+-        /* Length. */
+-        uint32_t len;
+-        /* The flags as indicated above. */
+-        uint16_t flags;
+-        /* We chain unused descriptors via this, too. */
+-        uint16_t next;
+-};
+-
+-struct vring_avail {
+-        uint16_t flags;
+-        uint16_t idx;
+-        uint16_t ring[0];
+-};
+-
+-/* uint32_t is used here for ids for padding reasons. */
+-struct vring_used_elem {
+-        /* Index of start of used descriptor chain. */
+-        uint32_t id;
+-        /* Total length of the descriptor chain which was written to. */
+-        uint32_t len;
+-};
+-
+-struct vring_used {
+-        uint16_t flags;
+-        uint16_t idx;
+-        struct vring_used_elem ring[0];
+-};
++#include <dev/virtio/virtio_ring.h>
++#include <dev/iocap/iocap.h>
+ 
+ struct vring {
+ 	unsigned int num;
+ 
+-	struct vring_desc *desc;
++	struct iocap *desc;
+ 	struct vring_avail *avail;
+ 	struct vring_used *used;
+ };
+ 
+-/* Alignment requirements for vring elements.
+- * When using pre-virtio 1.0 layout, these fall out naturally.
+- */
+-#define VRING_AVAIL_ALIGN_SIZE 2
+-#define VRING_USED_ALIGN_SIZE 4
+-#define VRING_DESC_ALIGN_SIZE 16
+-
+ /* The standard layout for the ring is a continuous chunk of memory which
+  * looks like this.  We assume num is a power of 2.
+  *
+  * struct vring {
+- *      // The actual descriptors (16 bytes each)
+- *      struct vring_desc desc[num];
++ *      // The actual descriptors (32 bytes each)
++ *      struct iocap desc[num];
+  *
+  *      // A ring of available descriptor heads with free-running index.
+  *      __u16 avail_flags;
+  *      __u16 avail_idx;
+  *      __u16 available[num];
+  *      __u16 used_event_idx;
+  *
+  *      // Padding to the next align boundary.
+  *      char pad[];
+  *
+  *      // A ring of used descriptor heads with free-running index.
+  *      __u16 used_flags;
+  *      __u16 used_idx;
+  *      struct vring_used_elem used[num];
+  *      __u16 avail_event_idx;
+  * };
+  *
+  * NOTE: for VirtIO PCI, align is 4096.
+  */
+ 
+-/*
+- * We publish the used event index at the end of the available ring, and vice
+- * versa. They are at the end for backwards compatibility.
+- */
+-#define vring_used_event(vr)	((vr)->avail->ring[(vr)->num])
+-#define vring_avail_event(vr)	(*(uint16_t *)&(vr)->used->ring[(vr)->num])
+-
+ static inline int
+ vring_size(unsigned int num, unsigned long align)
+ {
+ 	int size;
+ 
+-	size = num * sizeof(struct vring_desc);
++	size = num * sizeof(struct iocap);
+ 	size += sizeof(struct vring_avail) + (num * sizeof(uint16_t)) +
+ 	    sizeof(uint16_t);
+ 	size = (size + align - 1) & ~(align - 1);
+ 	size += sizeof(struct vring_used) +
+ 	    (num * sizeof(struct vring_used_elem)) + sizeof(uint16_t);
+ 	return (size);
+ }
+ 
+ static inline void
+ vring_init(struct vring *vr, unsigned int num, uint8_t *p,
+     unsigned long align)
+ {
+         vr->num = num;
+-        vr->desc = (struct vring_desc *) p;
++        vr->desc = (struct iocap *) p;
+         vr->avail = (struct vring_avail *) (p +
+-	    num * sizeof(struct vring_desc));
++	    num * sizeof(struct iocap));
+         vr->used = (void *)roundup2(&vr->avail->ring[num], align);
+ }
+ 
+-/*
+- * The following is used with VIRTIO_RING_F_EVENT_IDX.
+- *
+- * Assuming a given event_idx value from the other size, if we have
+- * just incremented index from old to new_idx, should we trigger an
+- * event?
+- */
+-static inline int
+-vring_need_event(uint16_t event_idx, uint16_t new_idx, uint16_t old)
+-{
+-
+-	return (uint16_t)(new_idx - event_idx - 1) < (uint16_t)(new_idx - old);
+-}
+ #endif /* VIRTIO_RING_H */
+-// CHERI CHANGES START
+-// {
+-//   "updated": 20230509,
+-//   "target_type": "kernel",
+-//   "changes_purecap": [
+-//     "pointer_alignment"
+-//   ]
+-// }
+-// CHERI CHANGES END
+
+
+comparing sys/dev/virtio/virtqueue_iocap.h sys/dev/virtio/virtqueue.h
+
+--- sys/dev/virtio/virtqueue.h	2025-07-09 14:25:06.693986919 +0100
++++ /dev/fd/63	2026-06-17 19:38:06.637782285 +0100
+@@ -1,11 +1,13 @@
+ /*-
++ * Copyright (c) 2025 Samuel Stark <sws35@cam.ac.uk>
++ *
+  * SPDX-License-Identifier: BSD-2-Clause
+  *
+  * Copyright (c) 2011, Bryan Venteicher <bryanv@FreeBSD.org>
+  * All rights reserved.
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions
+  * are met:
+  * 1. Redistributions of source code must retain the above copyright
+  *    notice unmodified, this list of conditions, and the following
+@@ -22,42 +24,26 @@
+  * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+  * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
+ #ifndef _VIRTIO_VIRTQUEUE_H
+ #define _VIRTIO_VIRTQUEUE_H
+ 
++#include <dev/iocap/iocap_keymngr.h>
++#include <dev/virtio/virtqueue.h>
++
+ struct virtqueue;
+ struct sglist;
+ 
+-/*
+- * Device callback for a virtqueue interrupt.
+- *
+- * Called in an ithread context, which is allowed to take
+- * mutexes but should avoid lock contention where possible.
+- * See BUS_SETUP_INTR(9)
+- */
+-typedef void virtqueue_intr_t(void *);
+-
+-/*
+- * Hint on how long the next interrupt should be postponed. This is
+- * only used when the EVENT_IDX feature is negotiated.
+- */
+-typedef enum {
+-	VQ_POSTPONE_SHORT,
+-	VQ_POSTPONE_LONG,
+-	VQ_POSTPONE_EMPTIED	/* Until all available desc are used. */
+-} vq_postpone_t;
+-
+ #define VIRTQUEUE_MAX_NAME_SZ	32
+ 
+ /* One for each virtqueue the device wishes to allocate. */
+ struct vq_alloc_info {
+ 	char		   vqai_name[VIRTQUEUE_MAX_NAME_SZ];
+ 	int		   vqai_maxindirsz;
+ 	// Function called in an ithread context, which is allowed
+ 	// to take mutexes but should avoid lock contention where possible.
+ 	// See BUS_SETUP_INTR(9)
+ 	virtqueue_intr_t  *vqai_intr;
+@@ -85,26 +71,28 @@
+ void	 virtqueue_intr(struct virtqueue *vq);
+ int	 virtqueue_enable_intr(struct virtqueue *vq);
+ int	 virtqueue_postpone_intr(struct virtqueue *vq, vq_postpone_t hint);
+ void	 virtqueue_disable_intr(struct virtqueue *vq);
+ 
+ /* Get physical address of the virtqueue ring. */
+ vm_paddr_t virtqueue_paddr(struct virtqueue *vq);
+ vm_paddr_t virtqueue_desc_paddr(struct virtqueue *vq);
+ vm_paddr_t virtqueue_avail_paddr(struct virtqueue *vq);
+ vm_paddr_t virtqueue_used_paddr(struct virtqueue *vq);
++size_t     virtqueue_size_bytes(struct virtqueue *vq);
+ 
+ uint16_t virtqueue_index(struct virtqueue *vq);
+ bool	 virtqueue_full(struct virtqueue *vq);
+ bool	 virtqueue_empty(struct virtqueue *vq);
+ int	 virtqueue_size(struct virtqueue *vq);
+ int	 virtqueue_nfree(struct virtqueue *vq);
+ int	 virtqueue_nused(struct virtqueue *vq);
+ void	 virtqueue_notify(struct virtqueue *vq);
+ void	 virtqueue_dump(struct virtqueue *vq);
+ 
+-int	 virtqueue_enqueue(struct virtqueue *vq, void *cookie,
+-	     struct sglist *sg, int readable, int writable);
++// Does not mint IOCaps unless the return value is 0.
++int	 virtqueue_enqueue(struct virtqueue *vq, bus_dmamap_t mapp,
++	void *cookie, struct sglist *sg, int readable, int writable);
+ void	*virtqueue_dequeue(struct virtqueue *vq, uint32_t *len);
+ void	*virtqueue_poll(struct virtqueue *vq, uint32_t *len);
+ 
+ #endif /* _VIRTIO_VIRTQUEUE_H */
+
+
+comparing sys/dev/virtio/virtqueue_iocap.c sys/dev/virtio/virtqueue.c
+
+--- sys/dev/virtio/virtqueue.c	2025-01-28 16:57:58.973518535 +0000
++++ /dev/fd/63	2026-06-17 19:38:06.640782332 +0100
+@@ -40,20 +40,21 @@
+ #include <vm/vm.h>
+ #include <vm/pmap.h>
+ 
+ #include <machine/cpu.h>
+ #include <machine/bus.h>
+ #include <machine/atomic.h>
+ #include <machine/resource.h>
+ #include <sys/bus.h>
+ #include <sys/rman.h>
+ 
++#include <dev/iocap/iocap_keymngr.h>
+ #include <dev/virtio/virtio.h>
+ #include <dev/virtio/virtqueue.h>
+ #include <dev/virtio/virtio_ring.h>
+ 
+ #include "virtio_bus_if.h"
+ 
+ struct virtqueue {
+ 	device_t		 vq_dev;
+ 	uint16_t		 vq_queue_index;
+ 	uint16_t		 vq_nentries;
+@@ -83,68 +84,80 @@
+ 	uint16_t		 vq_used_cons_idx;
+ 
+ 	void			*vq_ring_mem;
+ 	int			 vq_indirect_mem_size;
+ 	int			 vq_alignment;
+ 	int			 vq_ring_size;
+ 	char			 vq_name[VIRTQUEUE_MAX_NAME_SZ];
+ 
+ 	struct vq_desc_extra {
+ 		void		  *cookie;
+-		struct vring_desc *indirect;
++		struct iocap *indirect;
+ 		vm_paddr_t	   indirect_paddr;
+ 		uint16_t	   ndescs;
+ 	} vq_descx[0];
+ };
+ 
+ /*
+- * The maximum virtqueue size is 2^15. Use that value as the end of
++ * The maximum virtqueue IOCap *next* value is 2^13 - 1. Use that value as the end of
+  * descriptor chain terminator since it will never be a valid index
+  * in the descriptor table. This is used to verify we are correctly
+  * handling vq_free_cnt.
+  */
+-#define VQ_RING_DESC_CHAIN_END 32768
++#define VQ_RING_DESC_CHAIN_END 8191
+ 
+ #define VQASSERT(_vq, _exp, _msg, ...)				\
+     KASSERT((_exp),("%s: %s - "_msg, __func__, (_vq)->vq_name,	\
+ 	##__VA_ARGS__))
+ 
++#define VQASSERT_CCAPRESULT(_vq, _res, _msg)		     \
++	VQASSERT((_vq), ((_res) == CCapResult_Success), "ccap error %s while %s", \
++	ccap_result_str((_res)), (_msg))
++
+ #define VQ_RING_ASSERT_VALID_IDX(_vq, _idx)			\
+     VQASSERT((_vq), (_idx) < (_vq)->vq_nentries,		\
+ 	"invalid ring index: %d, max: %d", (_idx),		\
+ 	(_vq)->vq_nentries)
+ 
+ #define VQ_RING_ASSERT_CHAIN_TERM(_vq)				\
+     VQASSERT((_vq), (_vq)->vq_desc_head_idx ==			\
+ 	VQ_RING_DESC_CHAIN_END,	"full ring terminated "		\
+ 	"incorrectly: head idx: %d", (_vq)->vq_desc_head_idx)
+ 
++// Equivalent of VQASSERT_CCAPRESULT that doesn't turn off in debug builds
++#define VQREQUIRE_CCAPRESULT(_vq, _res, _msg, ...) do {				\
++	if (__predict_false((_res) != CCapResult_Success))			\
++		panic("%s: %s - %s - "_msg, __func__, (_vq)->vq_name,		\
++			ccap_result_str(_res), ##__VA_ARGS__);			\
++} while (0)
++
++
+ static int	virtqueue_init_indirect(struct virtqueue *vq, int);
+ static void	virtqueue_free_indirect(struct virtqueue *vq);
+ static void	virtqueue_init_indirect_list(struct virtqueue *,
+-		    struct vring_desc *);
++		    struct iocap *);
+ 
+ static void	vq_ring_init(struct virtqueue *);
+ static void	vq_ring_update_avail(struct virtqueue *, uint16_t);
+ static uint16_t	vq_ring_enqueue_segments(struct virtqueue *,
+-		    struct vring_desc *, uint16_t, struct sglist *, int, int);
++	bus_dmamap_t, struct iocap *, uint16_t, struct sglist *, int, int);
+ static bool	vq_ring_use_indirect(struct virtqueue *, int);
+-static void	vq_ring_enqueue_indirect(struct virtqueue *, void *,
+-		    struct sglist *, int, int);
++static void	vq_ring_enqueue_indirect(struct virtqueue *,
++	bus_dmamap_t, void *, struct sglist *, int, int);
+ static int	vq_ring_enable_interrupt(struct virtqueue *, uint16_t);
+ static int	vq_ring_must_notify_host(struct virtqueue *);
+ static void	vq_ring_notify_host(struct virtqueue *);
+ static void	vq_ring_free_chain(struct virtqueue *, uint16_t);
+ 
+ SDT_PROVIDER_DEFINE(virtqueue);
+ SDT_PROBE_DEFINE6(virtqueue, , enqueue_segments, entry, "struct virtqueue *",
+-    "struct vring_desc *", "uint16_t", "struct sglist *", "int", "int");
++    "struct iocap *", "uint16_t", "struct sglist *", "int", "int");
+ SDT_PROBE_DEFINE1(virtqueue, , enqueue_segments, return, "uint16_t");
+ 
+ #define vq_modern(_vq) 		(((_vq)->vq_flags & VIRTQUEUE_FLAG_MODERN) != 0)
+ #define vq_htog16(_vq, _val) 	virtio_htog16(vq_modern(_vq), _val)
+ #define vq_htog32(_vq, _val) 	virtio_htog32(vq_modern(_vq), _val)
+ #define vq_htog64(_vq, _val) 	virtio_htog64(vq_modern(_vq), _val)
+ #define vq_gtoh16(_vq, _val) 	virtio_gtoh16(vq_modern(_vq), _val)
+ #define vq_gtoh32(_vq, _val) 	virtio_gtoh32(vq_modern(_vq), _val)
+ #define vq_gtoh64(_vq, _val) 	virtio_gtoh64(vq_modern(_vq), _val)
+ 
+@@ -162,20 +175,25 @@
+ 	if (size == 0) {
+ 		device_printf(dev,
+ 		    "virtqueue %d (%s) does not exist (size is zero)\n",
+ 		    queue, info->vqai_name);
+ 		return (ENODEV);
+ 	} else if (!powerof2(size)) {
+ 		device_printf(dev,
+ 		    "virtqueue %d (%s) size is not a power of 2: %d\n",
+ 		    queue, info->vqai_name, size);
+ 		return (ENXIO);
++	} else if (size > VQ_RING_DESC_CHAIN_END) {
++		device_printf(dev,
++		    "virtqueue %d (%s) size is too large - 'next' fields would exceed 2^13-1: %d\n",
++		    queue, info->vqai_name, size);
++		return (EDOM);
+ 	} else if (info->vqai_maxindirsz > VIRTIO_MAX_INDIRECT) {
+ 		device_printf(dev, "virtqueue %d (%s) requested too many "
+ 		    "indirect descriptors: %d, max %d\n",
+ 		    queue, info->vqai_name, info->vqai_maxindirsz,
+ 		    VIRTIO_MAX_INDIRECT);
+ 		return (EINVAL);
+ 	}
+ 
+ 	vq = malloc(sizeof(struct virtqueue) +
+ 	    size * sizeof(struct vq_desc_extra), M_DEVBUF, M_NOWAIT | M_ZERO);
+@@ -242,21 +260,28 @@
+ 		 * negotiated. Return zero to keep the initialization
+ 		 * going: we'll run fine without.
+ 		 */
+ 		if (bootverbose)
+ 			device_printf(dev, "virtqueue %d (%s) requested "
+ 			    "indirect descriptors but not negotiated\n",
+ 			    vq->vq_queue_index, vq->vq_name);
+ 		return (0);
+ 	}
+ 
+-	size = indirect_size * sizeof(struct vring_desc);
++	if (indirect_size >= VQ_RING_DESC_CHAIN_END) {
++		device_printf(dev,
++		    "virtqueue %d (%s) indirect_size is too large - 'next' fields would exceed 2^13-1: %d\n",
++		    vq->vq_queue_index, vq->vq_name, indirect_size);
++		return (EDOM);
++	}
++
++	size = indirect_size * sizeof(struct iocap);
+ 	vq->vq_max_indirect_size = indirect_size;
+ 	vq->vq_indirect_mem_size = size;
+ 	vq->vq_flags |= VIRTQUEUE_FLAG_INDIRECT;
+ 
+ 	for (i = 0; i < vq->vq_nentries; i++) {
+ 		dxp = &vq->vq_descx[i];
+ 
+ 		dxp->indirect = malloc(size, M_DEVBUF, M_NOWAIT);
+ 		if (dxp->indirect == NULL) {
+ 			device_printf(dev, "cannot allocate indirect list\n");
+@@ -286,29 +311,33 @@
+ 		dxp->indirect = NULL;
+ 		dxp->indirect_paddr = 0;
+ 	}
+ 
+ 	vq->vq_flags &= ~VIRTQUEUE_FLAG_INDIRECT;
+ 	vq->vq_indirect_mem_size = 0;
+ }
+ 
+ static void
+ virtqueue_init_indirect_list(struct virtqueue *vq,
+-    struct vring_desc *indirect)
++    struct iocap *indirect)
+ {
+ 	int i;
++	CCapResult res __diagused; // This is used in assertions that should never fire
+ 
+ 	bzero(indirect, vq->vq_indirect_mem_size);
+ 
+-	for (i = 0; i < vq->vq_max_indirect_size - 1; i++)
+-		indirect[i].next = vq_gtoh16(vq, i + 1);
+-	indirect[i].next = vq_gtoh16(vq, VQ_RING_DESC_CHAIN_END);
++	for (i = 0; i < vq->vq_max_indirect_size - 1; i++) {
++		res = clear_virtio_except_next(&indirect[i], i + 1);
++		VQASSERT_CCAPRESULT(vq, res, "virtqueue_init_indirect_list");
++	}
++	res = clear_virtio_except_next(&indirect[i], VQ_RING_DESC_CHAIN_END);
++	VQASSERT_CCAPRESULT(vq, res, "virtqueue_init_indirect_list final");
+ }
+ 
+ int
+ virtqueue_reinit(struct virtqueue *vq, uint16_t size)
+ {
+ 	struct vq_desc_extra *dxp;
+ 	int i;
+ 
+ 	if (vq->vq_nentries != size) {
+ 		device_printf(vq->vq_dev,
+@@ -389,20 +418,26 @@
+ 	return (vtophys(vq->vq_ring.avail));
+ }
+ 
+ vm_paddr_t
+ virtqueue_used_paddr(struct virtqueue *vq)
+ {
+ 
+ 	return (vtophys(vq->vq_ring.used));
+ }
+ 
++size_t
++virtqueue_size_bytes(struct virtqueue *vq)
++{
++	return (size_t)vq->vq_ring_size;
++}
++
+ uint16_t
+ virtqueue_index(struct virtqueue *vq)
+ {
+ 
+ 	return (vq->vq_queue_index);
+ }
+ 
+ int
+ virtqueue_size(struct virtqueue *vq)
+ {
+@@ -514,21 +549,21 @@
+ 	if (vq->vq_flags & VIRTQUEUE_FLAG_EVENT_IDX) {
+ 		vring_used_event(&vq->vq_ring) = vq_gtoh16(vq,
+ 		    vq->vq_used_cons_idx - vq->vq_nentries - 1);
+ 		return;
+ 	}
+ 
+ 	vq->vq_ring.avail->flags |= vq_gtoh16(vq, VRING_AVAIL_F_NO_INTERRUPT);
+ }
+ 
+ int
+-virtqueue_enqueue(struct virtqueue *vq, void *cookie, struct sglist *sg,
++virtqueue_enqueue(struct virtqueue *vq, bus_dmamap_t mapp, void *cookie, struct sglist *sg,
+     int readable, int writable)
+ {
+ 	struct vq_desc_extra *dxp;
+ 	int needed;
+ 	uint16_t head_idx, idx;
+ 
+ 	needed = readable + writable;
+ 
+ 	VQASSERT(vq, cookie != NULL, "enqueuing with no cookie");
+ 	VQASSERT(vq, needed == sg->sg_nseg,
+@@ -537,35 +572,35 @@
+ 	    needed <= vq->vq_nentries || needed <= vq->vq_max_indirect_size,
+ 	    "too many segments to enqueue: %d, %d/%d", needed,
+ 	    vq->vq_nentries, vq->vq_max_indirect_size);
+ 
+ 	if (needed < 1)
+ 		return (EINVAL);
+ 	if (vq->vq_free_cnt == 0)
+ 		return (ENOSPC);
+ 
+ 	if (vq_ring_use_indirect(vq, needed)) {
+-		vq_ring_enqueue_indirect(vq, cookie, sg, readable, writable);
++		vq_ring_enqueue_indirect(vq, mapp, cookie, sg, readable, writable);
+ 		return (0);
+ 	} else if (vq->vq_free_cnt < needed)
+ 		return (EMSGSIZE);
+ 
+ 	head_idx = vq->vq_desc_head_idx;
+ 	VQ_RING_ASSERT_VALID_IDX(vq, head_idx);
+ 	dxp = &vq->vq_descx[head_idx];
+ 
+ 	VQASSERT(vq, dxp->cookie == NULL,
+ 	    "cookie already exists for index %d", head_idx);
+ 	dxp->cookie = cookie;
+ 	dxp->ndescs = needed;
+ 
+-	idx = vq_ring_enqueue_segments(vq, vq->vq_ring.desc, head_idx,
++	idx = vq_ring_enqueue_segments(vq, mapp, vq->vq_ring.desc, head_idx,
+ 	    sg, readable, writable);
+ 
+ 	vq->vq_desc_head_idx = idx;
+ 	vq->vq_free_cnt -= needed;
+ 	if (vq->vq_free_cnt == 0)
+ 		VQ_RING_ASSERT_CHAIN_TERM(vq);
+ 	else
+ 		VQ_RING_ASSERT_VALID_IDX(vq, idx);
+ 
+ 	vq_ring_update_avail(vq, head_idx);
+@@ -653,32 +688,36 @@
+ 	    vq_htog16(vq, vq->vq_ring.used->idx),
+ 	    vq_htog16(vq, vring_used_event(&vq->vq_ring)),
+ 	    vq_htog16(vq, vq->vq_ring.avail->flags),
+ 	    vq_htog16(vq, vq->vq_ring.used->flags));
+ }
+ 
+ static void
+ vq_ring_init(struct virtqueue *vq)
+ {
+ 	struct vring *vr;
+-	char *ring_mem;
++	uint8_t *ring_mem;
+ 	int i, size;
++	CCapResult res __diagused; // This is used in assertions that should never fire
+ 
+ 	ring_mem = vq->vq_ring_mem;
+ 	size = vq->vq_nentries;
+ 	vr = &vq->vq_ring;
+ 
+ 	vring_init(vr, size, ring_mem, vq->vq_alignment);
+ 
+-	for (i = 0; i < size - 1; i++)
+-		vr->desc[i].next = vq_gtoh16(vq, i + 1);
+-	vr->desc[i].next = vq_gtoh16(vq, VQ_RING_DESC_CHAIN_END);
++	for (i = 0; i < size - 1; i++) {
++		res = clear_virtio_except_next(&vr->desc[i], i + 1);
++		VQASSERT_CCAPRESULT(vq, res, "vq_ring_init");
++	}
++	res = clear_virtio_except_next(&vr->desc[i], VQ_RING_DESC_CHAIN_END);
++	VQASSERT_CCAPRESULT(vq, res, "vq_ring_init final");
+ }
+ 
+ static void
+ vq_ring_update_avail(struct virtqueue *vq, uint16_t desc_idx)
+ {
+ 	uint16_t avail_idx, avail_ring_idx;
+ 
+ 	/*
+ 	 * Place the head of the descriptor chain into the next slot and make
+ 	 * it usable to the host. The chain is made available now rather than
+@@ -691,48 +730,66 @@
+ 	vq->vq_ring.avail->ring[avail_ring_idx] = vq_gtoh16(vq, desc_idx);
+ 
+ 	wmb();
+ 	vq->vq_ring.avail->idx = vq_gtoh16(vq, avail_idx + 1);
+ 
+ 	/* Keep pending count until virtqueue_notify(). */
+ 	vq->vq_queued_cnt++;
+ }
+ 
+ static uint16_t
+-vq_ring_enqueue_segments(struct virtqueue *vq, struct vring_desc *desc,
++vq_ring_enqueue_segments(struct virtqueue *vq, bus_dmamap_t mapp, struct iocap *desc,
+     uint16_t head_idx, struct sglist *sg, int readable, int writable)
+ {
+ 	struct sglist_seg *seg;
+-	struct vring_desc *dp;
++	struct iocap* iocap;
+ 	int i, needed;
+ 	uint16_t idx;
+ 
++	struct bus_dma_segment dma_seg;
++	uint16_t next;
++	uint16_t flags;
++
++	CCapResult mint_res;
++
+ 	SDT_PROBE6(virtqueue, , enqueue_segments, entry, vq, desc, head_idx,
+ 	    sg, readable, writable);
+ 
+ 	needed = readable + writable;
+ 
+ 	for (i = 0, idx = head_idx, seg = sg->sg_segs;
+ 	     i < needed;
+-	     i++, idx = vq_htog16(vq, dp->next), seg++) {
++	     i++, idx = next, seg++) {
+ 		VQASSERT(vq, idx != VQ_RING_DESC_CHAIN_END,
+ 		    "premature end of free desc chain");
+ 
+-		dp = &desc[idx];
+-		dp->addr = vq_gtoh64(vq, seg->ss_paddr);
+-		dp->len = vq_gtoh32(vq, seg->ss_len);
+-		dp->flags = 0;
++		iocap = &desc[idx];
++
++		dma_seg.ds_addr = seg->ss_paddr;
++		dma_seg.ds_len = seg->ss_len;
++		next = iocap_virtio_get_encoded_next(iocap);
++		flags = 0;
+ 
+ 		if (i < needed - 1)
+-			dp->flags |= vq_gtoh16(vq, VRING_DESC_F_NEXT);
++			flags |= VRING_DESC_F_NEXT;
+ 		if (i >= readable)
+-			dp->flags |= vq_gtoh16(vq, VRING_DESC_F_WRITE);
++			flags |= VRING_DESC_F_WRITE;
++
++		mint_res = bus_dmamap_mint_virtio(
++			mapp,
++			&dma_seg,
++			flags,
++			next,
++			iocap
++		);
++		VQREQUIRE_CCAPRESULT(vq, mint_res, "couldn't mint cap of [%lx + %lx)\n",
++			dma_seg.ds_addr, dma_seg.ds_len);
+ 	}
+ 
+ 	SDT_PROBE1(virtqueue, , enqueue_segments, return, idx);
+ 	return (idx);
+ }
+ 
+ static bool
+ vq_ring_use_indirect(struct virtqueue *vq, int needed)
+ {
+ 
+@@ -742,50 +799,64 @@
+ 	if (vq->vq_max_indirect_size < needed)
+ 		return (false);
+ 
+ 	if (needed < 2)
+ 		return (false);
+ 
+ 	return (true);
+ }
+ 
+ static void
+-vq_ring_enqueue_indirect(struct virtqueue *vq, void *cookie,
+-    struct sglist *sg, int readable, int writable)
++vq_ring_enqueue_indirect(struct virtqueue *vq, bus_dmamap_t mapp,
++	void *cookie, struct sglist *sg, int readable, int writable)
+ {
+-	struct vring_desc *dp;
++	struct iocap *iocap;
+ 	struct vq_desc_extra *dxp;
+ 	int needed;
+ 	uint16_t head_idx;
++	uint16_t iocap_next;
++	CCapResult mint_res;
+ 
+ 	needed = readable + writable;
+ 	VQASSERT(vq, needed <= vq->vq_max_indirect_size,
+ 	    "enqueuing too many indirect descriptors");
+ 
+ 	head_idx = vq->vq_desc_head_idx;
+ 	VQ_RING_ASSERT_VALID_IDX(vq, head_idx);
+-	dp = &vq->vq_ring.desc[head_idx];
++	iocap = &vq->vq_ring.desc[head_idx];
+ 	dxp = &vq->vq_descx[head_idx];
+ 
+ 	VQASSERT(vq, dxp->cookie == NULL,
+ 	    "cookie already exists for index %d", head_idx);
+ 	dxp->cookie = cookie;
+ 	dxp->ndescs = 1;
+ 
+-	dp->addr = vq_gtoh64(vq, dxp->indirect_paddr);
+-	dp->len = vq_gtoh32(vq, needed * sizeof(struct vring_desc));
+-	dp->flags = vq_gtoh16(vq, VRING_DESC_F_INDIRECT);
++	struct bus_dma_segment dma_seg;
++	dma_seg.ds_addr = dxp->indirect_paddr;
++	dma_seg.ds_len = needed * sizeof(struct iocap);
++	iocap_next = iocap_virtio_get_encoded_next(iocap);
++	mint_res = bus_dmamap_mint_virtio(
++		mapp,
++		&dma_seg,
++		VRING_DESC_F_INDIRECT,
++		// Maintain the next pointer even though we don't use it
++		// TODO is this necessary?
++		iocap_next,
++		iocap
++	);
++	VQREQUIRE_CCAPRESULT(vq, mint_res, "couldn't mint indirect cap of [%lx + %lx)\n",
++		dma_seg.ds_addr, dma_seg.ds_len);
+ 
+-	vq_ring_enqueue_segments(vq, dxp->indirect, 0,
++	vq_ring_enqueue_segments(vq, mapp, dxp->indirect, 0,
+ 	    sg, readable, writable);
+ 
+-	vq->vq_desc_head_idx = vq_htog16(vq, dp->next);
++	vq->vq_desc_head_idx = iocap_next;
+ 	vq->vq_free_cnt--;
+ 	if (vq->vq_free_cnt == 0)
+ 		VQ_RING_ASSERT_CHAIN_TERM(vq);
+ 	else
+ 		VQ_RING_ASSERT_VALID_IDX(vq, vq->vq_desc_head_idx);
+ 
+ 	vq_ring_update_avail(vq, head_idx);
+ }
+ 
+ static int
+@@ -838,43 +909,48 @@
+ vq_ring_notify_host(struct virtqueue *vq)
+ {
+ 
+ 	VIRTIO_BUS_NOTIFY_VQ(vq->vq_dev, vq->vq_queue_index,
+ 	    vq->vq_notify_offset);
+ }
+ 
+ static void
+ vq_ring_free_chain(struct virtqueue *vq, uint16_t desc_idx)
+ {
+-	struct vring_desc *dp;
++	struct iocap *iocap;
+ 	struct vq_desc_extra *dxp;
++	CCapResult res __diagused; // This is used in assertions that should never fire
+ 
+ 	VQ_RING_ASSERT_VALID_IDX(vq, desc_idx);
+-	dp = &vq->vq_ring.desc[desc_idx];
++	iocap = &vq->vq_ring.desc[desc_idx];
+ 	dxp = &vq->vq_descx[desc_idx];
+ 
+ 	if (vq->vq_free_cnt == 0)
+ 		VQ_RING_ASSERT_CHAIN_TERM(vq);
+ 
+ 	vq->vq_free_cnt += dxp->ndescs;
+ 	dxp->ndescs--;
+ 
+-	if ((dp->flags & vq_gtoh16(vq, VRING_DESC_F_INDIRECT)) == 0) {
+-		while (dp->flags & vq_gtoh16(vq, VRING_DESC_F_NEXT)) {
+-			uint16_t next_idx = vq_htog16(vq, dp->next);
++	uint16_t flags = iocap_virtio_get_indirect_next_flags(iocap);
++
++	if ((flags & VRING_DESC_F_INDIRECT) == 0) {
++		while (flags & VRING_DESC_F_NEXT) {
++			uint16_t next_idx = iocap_virtio_get_encoded_next(iocap);
+ 			VQ_RING_ASSERT_VALID_IDX(vq, next_idx);
+-			dp = &vq->vq_ring.desc[next_idx];
++			iocap = &vq->vq_ring.desc[next_idx];
++			flags = iocap_virtio_get_indirect_next_flags(iocap);
+ 			dxp->ndescs--;
+ 		}
+ 	}
+ 
+ 	VQASSERT(vq, dxp->ndescs == 0,
+ 	    "failed to free entire desc chain, remaining: %d", dxp->ndescs);
+ 
+ 	/*
+ 	 * We must append the existing free chain, if any, to the end of
+ 	 * newly freed chain. If the virtqueue was completely used, then
+ 	 * head would be VQ_RING_DESC_CHAIN_END (ASSERTed above).
+ 	 */
+-	dp->next = vq_gtoh16(vq, vq->vq_desc_head_idx);
++	res = clear_virtio_except_next(iocap, vq->vq_desc_head_idx);
++	VQASSERT_CCAPRESULT(vq, res, "vq_ring_free_chain final");
+ 	vq->vq_desc_head_idx = desc_idx;
+ }
+
+
+comparing sys/dev/virtio/block/virtio_blk_iocap.c sys/dev/virtio/block/virtio_blk.c
+
+--- sys/dev/virtio/block/virtio_blk.c	2026-05-24 22:12:09.539357813 +0100
++++ /dev/fd/63	2026-06-17 19:38:06.644782396 +0100
+@@ -21,20 +21,22 @@
+  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+  * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+  * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
+ /* Driver for VirtIO block devices. */
+ 
++// ReSharper disable CppDFAUnreachableFunctionCall
++// ReSharper disable CppParameterMayBeConstPtrOrRef
+ #include <sys/param.h>
+ #include <sys/systm.h>
+ #include <sys/kernel.h>
+ #include <sys/bio.h>
+ #include <sys/malloc.h>
+ #include <sys/module.h>
+ #include <sys/msan.h>
+ #include <sys/sglist.h>
+ #include <sys/sysctl.h>
+ #include <sys/lock.h>
+@@ -51,21 +53,24 @@
+ 
+ #include <dev/iocap/iocap_keymngr.h>
+ #include <dev/virtio/virtio.h>
+ #include <dev/virtio/virtqueue.h>
+ #include <dev/virtio/block/virtio_blk.h>
+ 
+ #include "virtio_if.h"
+ 
+ struct vtblk_request {
+ 	struct vtblk_softc		*vbr_sc;
++	union {
+ 	bus_dmamap_t			 vbr_mapp;
++		bus_dmamap_t			vbr_mapp;
++	};
+ 
+ 	/* Fields after this point are zeroed for each request. */
+ 	struct virtio_blk_outhdr	 vbr_hdr;
+ 	struct bio			*vbr_bp;
+ 	uint8_t				 vbr_ack;
+ 	uint8_t				 vbr_requeue_on_error;
+ 	uint8_t				 vbr_busdma_wait;
+ 	int				 vbr_error;
+ 	TAILQ_ENTRY(vtblk_request)	 vbr_link;
+ };
+@@ -84,21 +89,22 @@
+ #define VTBLK_FLAG_INDIRECT	0x0001
+ #define VTBLK_FLAG_DETACH	0x0002
+ #define VTBLK_FLAG_SUSPEND	0x0004
+ #define VTBLK_FLAG_BARRIER	0x0008
+ #define VTBLK_FLAG_WCE_CONFIG	0x0010
+ #define VTBLK_FLAG_BUSDMA_WAIT	0x0020
+ #define VTBLK_FLAG_BUSDMA_ALIGN	0x0040
+ 
+ 	struct virtqueue	*vtblk_vq;
+ 	struct sglist		*vtblk_sglist;
+-	bus_dma_tag_t		 vtblk_dmat;
++	bus_dma_enabled_tag_t		vtblk_queues_tag;
++	bus_dma_enabled_tag_t		vtblk_request_tag;
+ 	struct disk		*vtblk_disk;
+ 
+ 	struct bio_queue_head	 vtblk_bioq;
+ 	TAILQ_HEAD(, vtblk_request)
+ 				 vtblk_req_free;
+ 	TAILQ_HEAD(, vtblk_request)
+ 				 vtblk_req_ready;
+ 	struct vtblk_request	*vtblk_req_ordered;
+ 
+ 	int			 vtblk_max_nsegs;
+@@ -116,21 +122,21 @@
+ 	{ VIRTIO_BLK_F_GEOMETRY,	"DiskGeometry"	},
+ 	{ VIRTIO_BLK_F_RO,		"ReadOnly"	},
+ 	{ VIRTIO_BLK_F_BLK_SIZE,	"BlockSize"	},
+ 	{ VIRTIO_BLK_F_SCSI,		"SCSICmds"	},
+ 	{ VIRTIO_BLK_F_FLUSH,		"FlushCmd"	},
+ 	{ VIRTIO_BLK_F_TOPOLOGY,	"Topology"	},
+ 	{ VIRTIO_BLK_F_CONFIG_WCE,	"ConfigWCE"	},
+ 	{ VIRTIO_BLK_F_MQ,		"Multiqueue"	},
+ 	{ VIRTIO_BLK_F_DISCARD,		"Discard"	},
+ 	{ VIRTIO_BLK_F_WRITE_ZEROES,	"WriteZeros"	},
+-	{ VIRTIO_F_IOCAP_QUEUE,	"IOCap"	},
++	{ VIRTIO_F_QUEUE,	"IOCap"	},
+ 
+ 	{ 0, NULL }
+ };
+ 
+ static int	vtblk_modevent(module_t, int, void *);
+ 
+ static int	vtblk_probe(device_t);
+ static int	vtblk_attach(device_t);
+ static int	vtblk_detach(device_t);
+ static int	vtblk_suspend(device_t);
+@@ -224,37 +230,38 @@
+ #define VTBLK_COMMON_FEATURES \
+     (VIRTIO_BLK_F_SIZE_MAX		| \
+      VIRTIO_BLK_F_SEG_MAX		| \
+      VIRTIO_BLK_F_GEOMETRY		| \
+      VIRTIO_BLK_F_RO			| \
+      VIRTIO_BLK_F_BLK_SIZE		| \
+      VIRTIO_BLK_F_FLUSH			| \
+      VIRTIO_BLK_F_TOPOLOGY		| \
+      VIRTIO_BLK_F_CONFIG_WCE		| \
+      VIRTIO_BLK_F_DISCARD		| \
+-     VIRTIO_RING_F_INDIRECT_DESC)
++     VIRTIO_RING_F_INDIRECT_DESC | \
++     VIRTIO_F_QUEUE)
+ 
+ #define VTBLK_MODERN_FEATURES	(VTBLK_COMMON_FEATURES)
+ #define VTBLK_LEGACY_FEATURES	(VIRTIO_BLK_F_BARRIER | VTBLK_COMMON_FEATURES)
+ 
+ #define VTBLK_MTX(_sc)		&(_sc)->vtblk_mtx
+ #define VTBLK_LOCK_INIT(_sc, _name) \
+ 				mtx_init(VTBLK_MTX((_sc)), (_name), \
+ 				    "VirtIO Block Lock", MTX_DEF)
+ #define VTBLK_LOCK(_sc)		mtx_lock(VTBLK_MTX((_sc)))
+ #define VTBLK_UNLOCK(_sc)	mtx_unlock(VTBLK_MTX((_sc)))
+ #define VTBLK_LOCK_DESTROY(_sc)	mtx_destroy(VTBLK_MTX((_sc)))
+ #define VTBLK_LOCK_ASSERT(_sc)	mtx_assert(VTBLK_MTX((_sc)), MA_OWNED)
+ #define VTBLK_LOCK_ASSERT_NOTOWNED(_sc) \
+ 				mtx_assert(VTBLK_MTX((_sc)), MA_NOTOWNED)
+ 
+-#define VTBLK_DISK_NAME		"vtbd"
++#define VTBLK_DISK_NAME		"vtbd-iocap"
+ #define VTBLK_QUIESCE_TIMEOUT	(30 * hz)
+ #define VTBLK_BSIZE		512
+ 
+ /*
+  * Each block request uses at least two segments - one for the header
+  * and one for the status.
+  */
+ #define VTBLK_MIN_SEGMENTS	2
+ 
+ static device_method_t vtblk_methods[] = {
+@@ -276,21 +283,21 @@
+ static driver_t vtblk_driver = {
+ 	"vtblk",
+ 	vtblk_methods,
+ 	sizeof(struct vtblk_softc)
+ };
+ 
+ VIRTIO_DRIVER_MODULE(virtio_blk, vtblk_driver, vtblk_modevent, NULL);
+ MODULE_VERSION(virtio_blk, 1);
+ MODULE_DEPEND(virtio_blk, virtio, 1, 1, 1);
+ 
+-VIRTIO_SIMPLE_PNPINFO(virtio_blk, VIRTIO_ID_BLOCK, "VirtIO Block Adapter (No IOCap)");
++VIRTIO_SIMPLE_PNPINFO(virtio_blk, VIRTIO_ID_BLOCK, "VirtIO Block Adapter (IOCap)");
+ 
+ static int
+ vtblk_modevent(module_t mod, int type, void *unused)
+ {
+ 	int error;
+ 
+ 	error = 0;
+ 
+ 	switch (type) {
+ 	case MOD_LOAD:
+@@ -304,37 +311,40 @@
+ 	}
+ 
+ 	return (error);
+ }
+ 
+ static int
+ vtblk_probe(device_t dev)
+ {
+ 	if (virtio_get_device_type(dev) != virtio_blk_match.device_type)
+ 		return (ENXIO);
+-	// If IOCaps are supported by the device, and our bus returns tags which we can refine with IOCap support,
+-	// reject the device. The IOCap-specific driver will pick it up.
+-	if (virtio_get_iocap_support(dev) != 0) {
+-		if (bus_dma_tag_iocap_refinable(bus_get_dma_tag(dev)) != NULL) {
++	// If IOCaps are not supported by the device, reject it. The no-IOCap-specific driver will pick it up.
++	// TODO search the parent chain for a IOCap-capable bus. If it isn't present, drop to the non-IOCap driver.
++	if (virtio_get_support(dev) == 0)
++		return (ENXIO);
++	if (bus_dma_tag_refinable(bus_get_dma_tag(dev)) == 0)
+ 			return (ENXIO);
+-		}
+-	}
+ 	device_set_desc(dev, virtio_blk_match.description);
++	// TODO switch to BUS_PROBE_VENDOR or BUS_PROBE_SPECIFIC and remove the not-iocap logic from the virtio_blk driver
+ 	return (BUS_PROBE_DEFAULT);
+ }
+ 
+ static int
+ vtblk_attach(device_t dev)
+ {
+ 	struct vtblk_softc *sc;
+ 	struct virtio_blk_config blkcfg;
+ 	int error;
++	bus_dma_tag_t intermediate_tag;
++	bus_dma_refinable_tag_t	refinable_tag;
++
+ 
+ 	sc = device_get_softc(dev);
+ 	sc->vtblk_dev = dev;
+ 	virtio_set_feature_desc(dev, vtblk_feature_desc);
+ 
+ 	VTBLK_LOCK_INIT(sc, device_get_nameunit(dev));
+ 	bioq_init(&sc->vtblk_bioq);
+ 	TAILQ_INIT(&sc->vtblk_dump_queue);
+ 	TAILQ_INIT(&sc->vtblk_req_free);
+ 	TAILQ_INIT(&sc->vtblk_req_ready);
+@@ -393,41 +403,84 @@
+ 	    0,						/* boundary */
+ 	    BUS_SPACE_MAXADDR,				/* lowaddr */
+ 	    BUS_SPACE_MAXADDR,				/* highaddr */
+ 	    NULL, NULL,					/* filter, filterarg */
+ 	    maxphys,					/* max request size */
+ 	    sc->vtblk_max_nsegs - VTBLK_MIN_SEGMENTS,	/* max # segments */
+ 	    maxphys,					/* maxsegsize */
+ 	    0,						/* flags */
+ 	    busdma_lock_mutex,				/* lockfunc */
+ 	    &sc->vtblk_mtx,				/* lockarg */
+-	    &sc->vtblk_dmat);
++	    &intermediate_tag);
+ 	if (error) {
+ 		device_printf(dev, "cannot create bus dma tag\n");
+ 		goto fail;
+ 	}
++	// Initialize vtblk_refinable_dmat and vtblk_dmat at the same time.
++	// They're in a union so that we can reference as generic bus_dma_tag_t
++	// when convenient
++	refinable_tag = bus_dma_tag_refinable(intermediate_tag);
++	if (refinable_tag == NULL) {
++		error = ENOTSUP;
++		device_printf(dev, "bus dma tag was not iocap-refinable\n");
++		goto fail;
++	}
++
++	error = bus_dma_tag_refine_to_group(
++		refinable_tag,
++		(struct iocap_keymngr_revocation_params) {
++			// This is actually fine, because we always unload all mappings together
++			// => lifetime of any given mapping = lifetime of tag
++			.mode = iocap_revoke_when_no_mappings_unsafe,
++		},
++		&sc->vtblk_queues_tag
++	);
++	if (error) {
++		device_printf(dev, "cannot refine bus dma tag to iocap group for holding queues\n");
++		goto fail;
++	}
+ 
+ #ifdef __powerpc__
+ 	/*
+ 	 * Virtio uses physical addresses rather than bus addresses, so we
+ 	 * need to ask busdma to skip the iommu physical->bus mapping.  At
+ 	 * present, this is only a thing on the powerpc architectures.
+ 	 */
+ 	bus_dma_tag_set_iommu(sc->vtblk_dmat, NULL, NULL);
+ #endif
+ 
+ 	error = vtblk_alloc_virtqueue(sc);
+ 	if (error) {
+ 		device_printf(dev, "cannot allocate virtqueue\n");
+ 		goto fail;
+ 	}
+ 
++	error = bus_dma_tag_refine_to_group(
++		refinable_tag,
++		(struct iocap_keymngr_revocation_params) {
++			.mode = iocap_rolling_epoch_x4,
++			.params = {
++				.rolling_epoch = {
++					// As per thesis: l_ops = ceil(q_ops / (n_l - 1)), ceil(x / y) with integer division = (x + y - 1) /
++					// This assumes virtio forces in-order consumption + enqueueing, even in the precense of out-of-order completion,
++					// which should be true: split and packed queues are both circular buffers.
++					.max_num_mappings_per_epoch = (virtqueue_size(sc->vtblk_vq) + 2) / 3,
++				}
++			}
++		},
++		&sc->vtblk_request_tag
++	);
++	if (error) {
++		device_printf(dev, "cannot refine bus dma tag to iocap group for holding requests for queue #0\n");
++		goto fail;
++	}
++
+ 	error = vtblk_request_prealloc(sc);
+ 	if (error) {
+ 		device_printf(dev, "cannot preallocate requests\n");
+ 		goto fail;
+ 	}
+ 
+ 	vtblk_alloc_disk(sc, &blkcfg);
+ 
+ 	error = virtio_setup_intr(dev, INTR_TYPE_BIO | INTR_ENTROPY);
+ 	if (error) {
+@@ -457,23 +510,28 @@
+ 		vtblk_stop(sc);
+ 	VTBLK_UNLOCK(sc);
+ 
+ 	vtblk_drain(sc);
+ 
+ 	if (sc->vtblk_disk != NULL) {
+ 		disk_destroy(sc->vtblk_disk);
+ 		sc->vtblk_disk = NULL;
+ 	}
+ 
+-	if (sc->vtblk_dmat != NULL) {
+-		bus_dma_tag_destroy(sc->vtblk_dmat);
+-		sc->vtblk_dmat = NULL;
++	if (sc->vtblk_request_tag != NULL) {
++		bus_dma_tag_destroy((bus_dma_tag_t)sc->vtblk_request_tag);
++		sc->vtblk_request_tag = NULL;
++	}
++
++	if (sc->vtblk_queues_tag != NULL) {
++		bus_dma_tag_destroy((bus_dma_tag_t)sc->vtblk_queues_tag);
++		sc->vtblk_queues_tag = NULL;
+ 	}
+ 
+ 	if (sc->vtblk_sglist != NULL) {
+ 		sglist_free(sc->vtblk_sglist);
+ 		sc->vtblk_sglist = NULL;
+ 	}
+ 
+ 	VTBLK_LOCK_DESTROY(sc);
+ 
+ 	return (0);
+@@ -711,21 +769,21 @@
+ {
+ 	device_t dev;
+ 	struct vq_alloc_info vq_info;
+ 
+ 	dev = sc->vtblk_dev;
+ 
+ 	VQ_ALLOC_INFO_INIT(&vq_info, sc->vtblk_max_nsegs,
+ 	    vtblk_vq_intr, sc, &sc->vtblk_vq,
+ 	    "%s request", device_get_nameunit(dev));
+ 
+-	return (virtio_alloc_virtqueues(dev, 1, &vq_info));
++	return (virtio_alloc_virtqueues(dev, sc->vtblk_queues_tag, 1, &vq_info));
+ }
+ 
+ static void
+ vtblk_resize_disk(struct vtblk_softc *sc, uint64_t new_capacity)
+ {
+ 	device_t dev;
+ 	struct disk *dp;
+ 	int error;
+ 
+ 	dev = sc->vtblk_dev;
+@@ -860,45 +918,49 @@
+ 	 */
+ 	if ((sc->vtblk_flags & VTBLK_FLAG_INDIRECT) == 0)
+ 		nreqs /= VTBLK_MIN_SEGMENTS;
+ 
+ 	for (i = 0; i < nreqs; i++) {
+ 		req = malloc(sizeof(struct vtblk_request), M_DEVBUF, M_NOWAIT);
+ 		if (req == NULL)
+ 			return (ENOMEM);
+ 
+ 		req->vbr_sc = sc;
+-		if (bus_dmamap_create(sc->vtblk_dmat, 0, &req->vbr_mapp)) {
++		if (bus_dmamap_create((bus_dma_tag_t)sc->vtblk_request_tag, 0, &req->vbr_mapp)) {
+ 			free(req, M_DEVBUF);
+ 			return (ENOMEM);
+ 		}
++		if (!bus_dmamap_can_mint(req->vbr_mapp)) {
++			device_printf(sc->vtblk_dev, "tried to prealloc a dmamap that can't mint IOCaps\n");
++			return (EINVAL);
++		}
+ 
+ 		MPASS(sglist_count(&req->vbr_hdr, sizeof(req->vbr_hdr)) == 1);
+ 		MPASS(sglist_count(&req->vbr_ack, sizeof(req->vbr_ack)) == 1);
+ 
+ 		sc->vtblk_request_count++;
+ 		vtblk_request_enqueue(sc, req);
+ 	}
+ 
+ 	return (0);
+ }
+ 
+ static void
+ vtblk_request_free(struct vtblk_softc *sc)
+ {
+ 	struct vtblk_request *req;
+ 
+ 	MPASS(TAILQ_EMPTY(&sc->vtblk_req_ready));
+ 
+ 	while ((req = vtblk_request_dequeue(sc)) != NULL) {
+ 		sc->vtblk_request_count--;
+-		bus_dmamap_destroy(sc->vtblk_dmat, req->vbr_mapp);
++		bus_dmamap_destroy((bus_dma_tag_t)sc->vtblk_request_tag, req->vbr_mapp);
+ 		free(req, M_DEVBUF);
+ 	}
+ 
+ 	KASSERT(sc->vtblk_request_count == 0,
+ 	    ("%s: leaked %d requests", __func__, sc->vtblk_request_count));
+ }
+ 
+ static struct vtblk_request *
+ vtblk_request_dequeue(struct vtblk_softc *sc)
+ {
+@@ -1009,21 +1071,21 @@
+ 	int error = 0;
+ 
+ 	/*
+ 	 * Call via bus_dmamap_load_bio or directly depending on whether we
+ 	 * have a buffer we need to map.  If we don't have a busdma map,
+ 	 * try to perform the I/O directly and hope that it works (this will
+ 	 * happen when dumping).
+ 	 */
+ 	if ((req->vbr_mapp != NULL) &&
+ 	    (bp->bio_cmd == BIO_READ || bp->bio_cmd == BIO_WRITE)) {
+-		error = bus_dmamap_load_bio(sc->vtblk_dmat, req->vbr_mapp,
++		error = bus_dmamap_load_bio((bus_dma_tag_t)sc->vtblk_request_tag, req->vbr_mapp,
+ 		    req->vbr_bp, vtblk_request_execute_cb, req, flags);
+ 		if (error == EINPROGRESS) {
+ 			req->vbr_busdma_wait = 1;
+ 			sc->vtblk_flags |= VTBLK_FLAG_BUSDMA_WAIT;
+ 		}
+ 	} else {
+ 		vtblk_request_execute_cb(req, NULL, 0, 0);
+ 	}
+ 
+ 	return (error ? error : req->vbr_error);
+@@ -1087,20 +1149,21 @@
+ 	sglist_append(sg, &req->vbr_hdr, sizeof(struct virtio_blk_outhdr));
+ 
+ 	if (bp->bio_cmd == BIO_READ || bp->bio_cmd == BIO_WRITE) {
+ 		/*
+ 		 * We cast bus_addr_t to vm_paddr_t here; since we skip the
+ 		 * iommu mapping (see vtblk_attach) this should be safe.
+ 		 */
+ 		for (i = 0; i < nseg; i++) {
+ 			error = sglist_append_phys(sg,
+ 			    (vm_paddr_t)segs[i].ds_addr, segs[i].ds_len);
++			// device_printf(sc->vtblk_dev, "sglist_append_phys 0x%lx 0x%lx\n", segs[i].ds_addr, segs[i].ds_len);
+ 			if (error || sg->sg_nseg == sg->sg_maxseg) {
+ 				panic("%s: bio %p data buffer too big %d",
+ 				    __func__, bp, error);
+ 			}
+ 		}
+ 
+ 		/* Special handling for dump, which bypasses busdma. */
+ 		if (req->vbr_mapp == NULL) {
+ 			error = sglist_append_bio(sg, bp);
+ 			if (error || sg->sg_nseg == sg->sg_maxseg) {
+@@ -1131,45 +1194,51 @@
+ 		}
+ 	}
+ 
+ 	writable++;
+ 	sglist_append(sg, &req->vbr_ack, sizeof(uint8_t));
+ 	readable = sg->sg_nseg - writable;
+ 
+ 	if (req->vbr_mapp != NULL) {
+ 		switch (bp->bio_cmd) {
+ 		case BIO_READ:
+-			bus_dmamap_sync(sc->vtblk_dmat, req->vbr_mapp,
++			bus_dmamap_sync((bus_dma_tag_t)sc->vtblk_request_tag, req->vbr_mapp,
+ 			    BUS_DMASYNC_PREREAD);
+ 			break;
+ 		case BIO_WRITE:
+-			bus_dmamap_sync(sc->vtblk_dmat, req->vbr_mapp,
++			bus_dmamap_sync((bus_dma_tag_t)sc->vtblk_request_tag, req->vbr_mapp,
+ 			    BUS_DMASYNC_PREWRITE);
+ 			break;
+ 		}
+ 	}
+ 
+-	error = virtqueue_enqueue(vq, req, sg, readable, writable);
++	error = virtqueue_enqueue(vq, req->vbr_mapp, req, sg, readable, writable);
+ 	if (error == 0 && ordered)
+ 		sc->vtblk_req_ordered = req;
+ 
+ 	/*
+ 	 * If we were called asynchronously, we need to notify the queue that
+ 	 * we've added a new request, since the notification from startio was
+ 	 * performed already.
+ 	 */
+ 	if (error == 0 && req->vbr_busdma_wait)
+ 		virtqueue_notify(vq);
+ 
+ out:
+-	if (error && (req->vbr_mapp != NULL))
+-		bus_dmamap_unload(sc->vtblk_dmat, req->vbr_mapp);
++	if (error && (req->vbr_mapp != NULL)) {
++		// If error != 0, the mapping hasn't actualy been mapped into the device's view
++		// or allocated an IOCap key yet.
++		// Therefore we can call bus_dmamap_unload to *synchronously*
++		// unmap without waiting for IOCap key epochs.
++		bus_dmamap_unload((bus_dma_tag_t)sc->vtblk_request_tag, req->vbr_mapp);
++	}
++
+ out1:
+ 	if (error && req->vbr_requeue_on_error)
+ 		vtblk_request_requeue_ready(sc, req);
+ 	req->vbr_error = error;
+ }
+ 
+ static int
+ vtblk_request_error(struct vtblk_request *req)
+ {
+ 	int error;
+@@ -1182,62 +1251,82 @@
+ 		error = ENOTSUP;
+ 		break;
+ 	default:
+ 		error = EIO;
+ 		break;
+ 	}
+ 
+ 	return (error);
+ }
+ 
+-// SAMUEL NOTE: THIS FUNCTION SHOULD TAKE A CALLBACK
+-static struct bio *
+-vtblk_queue_complete_one(struct vtblk_softc *sc, struct vtblk_request *req)
++typedef void (*vtblk_unload_cb)(struct vtblk_request *req, void* cb_arg2);
++
++// bus_dmamap_sync the memory under a request and unmap it from the device's view.
++// Immediately after this function returns, the memory it points to is usable, but it may still be accessible from the device.
++// Once the callback is called, the memory has been removed from the device view
++// and is safe to free and reuse for other purposes.
++static void
++vtblk_queue_complete_one(struct vtblk_softc *sc, struct vtblk_request *req, vtblk_unload_cb cb, void* cb_arg2)
+ {
+ 	struct bio *bp;
+ 
+ 	if (sc->vtblk_req_ordered != NULL) {
+ 		MPASS(sc->vtblk_req_ordered == req);
+ 		sc->vtblk_req_ordered = NULL;
+ 	}
+ 
+ 	bp = req->vbr_bp;
++	bp->bio_error = vtblk_request_error(req);
+ 	if (req->vbr_mapp != NULL) {
+ 		switch (bp->bio_cmd) {
+ 		case BIO_READ:
+-			bus_dmamap_sync(sc->vtblk_dmat, req->vbr_mapp,
++			bus_dmamap_sync((bus_dma_tag_t)sc->vtblk_request_tag, req->vbr_mapp,
+ 			    BUS_DMASYNC_POSTREAD);
+-			bus_dmamap_unload(sc->vtblk_dmat, req->vbr_mapp);
++			iocap_keymngr_bus_dmamap_unload2(
++				sc->vtblk_request_tag,
++				req->vbr_mapp,
++				(iocap_keymngr_bus_dmamap_unload2_cb)cb, req, cb_arg2
++				);
+ 			break;
+ 		case BIO_WRITE:
+-			bus_dmamap_sync(sc->vtblk_dmat, req->vbr_mapp,
++			bus_dmamap_sync((bus_dma_tag_t)sc->vtblk_request_tag, req->vbr_mapp,
+ 			    BUS_DMASYNC_POSTWRITE);
+-			bus_dmamap_unload(sc->vtblk_dmat, req->vbr_mapp);
++			iocap_keymngr_bus_dmamap_unload2(
++				sc->vtblk_request_tag,
++				req->vbr_mapp,
++				(iocap_keymngr_bus_dmamap_unload2_cb)cb, req, cb_arg2
++				);
+ 			break;
+ 		}
+ 	}
+-	bp->bio_error = vtblk_request_error(req);
+-	return (bp);
+ }
+ 
+ static void
+-vtblk_queue_completed(struct vtblk_softc *sc, struct bio_queue *queue)
++vtblk_queue_request_unloaded(struct vtblk_request *req, void* cb_arg2)
+ {
+-	struct vtblk_request *req;
+ 	struct bio *bp;
++	struct bio_queue *queue;
+ 
+-	while ((req = virtqueue_dequeue(sc->vtblk_vq, NULL)) != NULL) {
+-		bp = vtblk_queue_complete_one(sc, req);
++	bp = req->vbr_bp;
++	queue = (struct bio_queue*) cb_arg2;
+ 
+-		// SAMUEL NOTE: THIS IS WHAT WE NEED THE CALLBACK TO DO
+ 		TAILQ_INSERT_TAIL(queue, bp, bio_queue);
+-		vtblk_request_enqueue(sc, req);
++	vtblk_request_enqueue(req->vbr_sc, req);
++}
++
++static void
++vtblk_queue_completed(struct vtblk_softc *sc, struct bio_queue *queue)
++{
++	struct vtblk_request *req;
++
++	while ((req = virtqueue_dequeue(sc->vtblk_vq, NULL)) != NULL) {
++		vtblk_queue_complete_one(sc, req, vtblk_queue_request_unloaded, queue);
+ 	}
+ }
+ 
+ static void
+ vtblk_done_completed(struct vtblk_softc *sc, struct bio_queue *queue)
+ {
+ 	struct bio *bp, *tmp;
+ 
+ 	TAILQ_FOREACH_SAFE(bp, queue, bio_queue, tmp) {
+ 		if (bp->bio_error != 0)
+@@ -1422,30 +1511,32 @@
+ 	req->vbr_hdr.ioprio = vtblk_gtoh32(sc, 1);
+ 	req->vbr_hdr.sector = 0;
+ 
+ 	req->vbr_bp = &buf;
+ 	g_reset_bio(&buf);
+ 
+ 	buf.bio_cmd = BIO_READ;
+ 	buf.bio_data = dp->d_ident;
+ 	buf.bio_bcount = len;
+ 
++	// This function asserts synchronous revocation.
+ 	VTBLK_LOCK(sc);
+ 	error = vtblk_poll_request(sc, req);
+ 	VTBLK_UNLOCK(sc);
+ 
+ 	if (error) {
+ 		device_printf(sc->vtblk_dev,
+ 		    "error getting device identifier: %d\n", error);
+ 	}
+ }
+ 
++// This function asserts synchronous revocation!
+ static int
+ vtblk_poll_request(struct vtblk_softc *sc, struct vtblk_request *req)
+ {
+ 	struct vtblk_request *req1 __diagused;
+ 	struct virtqueue *vq;
+ 	struct bio *bp;
+ 	int error;
+ 
+ 	vq = sc->vtblk_vq;
+ 
+@@ -1454,21 +1545,23 @@
+ 
+ 	error = vtblk_request_execute(req, BUS_DMA_NOWAIT);
+ 	if (error)
+ 		return (error);
+ 
+ 	virtqueue_notify(vq);
+ 	req1 = virtqueue_poll(vq, NULL);
+ 	KASSERT(req == req1,
+ 	    ("%s: polling completed %p not %p", __func__, req1, req));
+ 
+-	bp = vtblk_queue_complete_one(sc, req);
++	// Setting the callback to null asserts synchronous revocation
++	vtblk_queue_complete_one(sc, req, NULL, NULL);
++	bp = req->vbr_bp;
+ 	error = bp->bio_error;
+ 	if (error && bootverbose) {
+ 		device_printf(sc->vtblk_dev,
+ 		    "%s: IO error: %d\n", __func__, error);
+ 	}
+ 	if (req != &sc->vtblk_dump_request)
+ 		vtblk_request_enqueue(sc, req);
+ 
+ 	return (error);
+ }

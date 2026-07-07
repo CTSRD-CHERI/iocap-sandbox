@@ -1,0 +1,97 @@
+Kanata	0004 C	1
+I	                  31	                  12	                   0
+L	                  31	0	'h000a7bc5a83a0000 R#12
+S	                  31	0	F0
+C	1
+S	                  31	0	F1
+S	                  31	2	KReq
+C	1
+S	                  31	0	F2
+S	                  31	2	Key
+C	1
+S	                  31	2	MAC
+S	                  31	0	DF
+E	                  31	0	F2
+L	                  31	0	Checker 'h0
+S	                  31	2	Idle
+E	                  31	2	Idle
+C	1
+S	                  31	0	D
+I	                  32	                  1	                   0
+L	                  32	0	'h001d5106b5a60000 W#10
+S	                  32	0	F0
+I	                  33	                  14	                   0
+L	                  33	0	'h0018c6d4c59bc000 R#14
+S	                  33	0	F0
+C	1
+S	                  32	0	F1
+S	                  32	2	Key
+S	                  33	0	F1
+S	                  33	2	KReq
+C	1
+S	                  32	0	F2
+S	                  33	0	F2
+S	                  33	2	Key
+C	1
+E	                  31	0	D
+S	                  33	2	MAC
+S	                  33	0	DF
+S	                  32	2	MAC
+S	                  32	0	DF
+E	                  32	0	F2
+L	                  32	0	Checker 'h1
+S	                  32	2	Idle
+E	                  32	2	Idle
+E	                  33	0	F2
+L	                  33	0	Checker 'h1
+S	                  33	2	Idle
+E	                  33	2	Idle
+C	1
+S	                  33	0	D
+S	                  32	0	D
+C	1
+E	                  31	2	MAC
+C	1
+C	1
+C	1
+C	1
+C	1
+E	                  32	0	D
+C	1
+C	1
+E	                  33	0	D
+C	1
+S	                  31	0	Fwd
+C	1
+E	                  32	2	MAC
+C	1
+S	                  32	0	Fwd
+C	1
+C	1
+C	1
+C	1
+E	                  33	2	MAC
+C	1
+S	                  33	0	Fwd
+C	1
+C	1
+C	1
+C	1
+C	1
+S	                  31	0	ScoreboardCompleted
+R	                  31	                  31	0
+C	1
+S	                  32	0	ScoreboardCompleted
+R	                  32	                  32	0
+C	1
+C	1
+C	1
+S	                  33	0	ScoreboardCompleted
+R	                  33	                  33	0
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1
+C	1

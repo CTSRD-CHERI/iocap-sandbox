@@ -1,0 +1,35 @@
++ sysctl dev.iocap_keymngr
+dev.iocap_keymngr.0.disable_encrypt: 0
+dev.iocap_keymngr.0.bad_read: 341
+dev.iocap_keymngr.0.good_read: 13626
+dev.iocap_keymngr.0.bad_write: 26927578
+dev.iocap_keymngr.0.good_write: 127595
+dev.iocap_keymngr.0.%pnpinfo: name=iocap_keymngr@50000000
+    compat=sws35,iocap_keymngr
++ suffix=vtbd-iocap1_nj1_enc
++ tee ./mounted_results//results_randrw_10000_vtbd-iocap1_nj1_enc.txt
++ ./bench/fio '--filename=/dev/vtbd-iocap1' --numjobs 1 '--rw=randread'
+    ./bench/fio_jobs.ini
+4k-qd1: (g=0): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B,
+    (T) 4096B-4096B, ioengine=posixaio, iodepth=1
+4k-qd4: (g=1): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B,
+    (T) 4096B-4096B, ioengine=posixaio, iodepth=4
+4k-qd16: (g=2): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B,
+    (T) 4096B-4096B, ioengine=posixaio, iodepth=16
+4k-qd64: (g=3): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B,
+    (T) 4096B-4096B, ioengine=posixaio, iodepth=64
+fio-3.42-31-g6a66-dirty
+Starting 4 processes
+
+Run status group 0 (all jobs):
+   READ: bw=210KiB/s (215kB/s), 210KiB/s-210KiB/s (215kB/s-215kB/s),
+        io=7356KiB (7533kB), run=35016-35016msec
+Run status group 1 (all jobs):
+   READ: bw=807KiB/s (827kB/s), 807KiB/s-807KiB/s (827kB/s-827kB/s),
+        io=27.6MiB (28.9MB), run=35008-35008msec
+Run status group 2 (all jobs):
+   READ: bw=2244KiB/s (2297kB/s), 2244KiB/s-2244KiB/s
+        (2297kB/s-2297kB/s), io=76.7MiB (80.4MB), run=35017-35017msec
+Run status group 3 (all jobs):
+   READ: bw=2110KiB/s (2161kB/s), 2110KiB/s-2110KiB/s
+        (2161kB/s-2161kB/s), io=72.2MiB (75.7MB), run=35021-35021msec
