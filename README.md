@@ -86,7 +86,10 @@ Once you are finished, hit Ctrl-C to interrupt - the simulation will take ~1 sec
 TODO test this
 
 ```bash
-$ just rebuild_freertos_qemu       # Build CheriFreeRTOS for QEMU
+# Build CheriFreeRTOS for QEMU, will also build a compatible version of CHERI-LLVM so will take a while.
+# The build system is prone to race conditions, so if it fails with
+# e.g. "unable to find library -lfreertos_tcpip" just try again.
+$ just rebuild_freertos_qemu       
 $ just build_qemu                  # Build QEMU
 
 $ just run-qemu-freertos           # Run CheriFreeRTOS inside a QEMU that has IOCap-enabled VirtIO devices

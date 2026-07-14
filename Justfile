@@ -159,6 +159,7 @@ rebuild_freertos_qemu:
         --freertos/use_virtio_blk \
         --freertos/use_virtio_iocaps \
         --freertos/source-directory "./os-freertos/freertos/" \
+        -d \
         --source-root {{FREERTOS_CHERIBUILD_SRC_ROOT}} \
         --output-root {{FREERTOS_CHERIBUILD_QEMU_OUTPUT}} \
         --build-root {{FREERTOS_CHERIBUILD_QEMU_BUILD}}
