@@ -1,0 +1,5 @@
+{
+  "freertos/source-directory": "./freertos/",
+  "skip-update": true,
+  "source-root": "./working/"
+}

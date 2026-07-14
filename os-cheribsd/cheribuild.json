@@ -1,0 +1,6 @@
+{
+  "cheribsd/source-directory": "./cheribsd/",
+  "qemu/source-directory": "../qemu/",
+  "skip-update": true,
+  "source-root": "./working/"
+}

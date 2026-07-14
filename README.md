@@ -12,6 +12,9 @@ If checking out all content, I recommend using `--depth=1` to avoid downloading 
 $ git submodule update --init --recursive --depth=1
 ```
 
+TODO theturboturnip/cheribsd and theturboturnip/tinyemu-virtio should be migrated over to CTSRD-CHERI. The others may be less consequential?
+
+
 ## Dependencies
 
 This repository uses some external tools that should be installed directly.
@@ -64,7 +67,10 @@ TODO
 This is not fast enough to be truly useful, but is a fine litmus test to make sure none of your hardware is irretrievably broken.
 
 ```bash
-$ just rebuild_freertos_sim     # Build CheriFreeRTOS for simulation
+# Build CheriFreeRTOS for simulation.
+# The FreeRTOS build system is prone to race conditions, so if it fails with
+# e.g. "unable to find library -lfreertos_tcpip" just try again a few times.
+$ just rebuild_freertos_sim
 $ just build_de10_bluesim       # Build a Bluespec simulation of the DE10 SoC
 $ just run-de10-sim-freertos    # Run the Bluespec simulation using the FreeRTOS ELF binary
 ```
@@ -83,35 +89,97 @@ Once you are finished, hit Ctrl-C to interrupt - the simulation will take ~1 sec
 
 ## Chapter 6 - Run CheriFreeRTOS on QEMU
 
-TODO test this
-
 ```bash
 # Build CheriFreeRTOS for QEMU, will also build a compatible version of CHERI-LLVM so will take a while.
-# The build system is prone to race conditions, so if it fails with
-# e.g. "unable to find library -lfreertos_tcpip" just try again.
-$ just rebuild_freertos_qemu       
-$ just build_qemu                  # Build QEMU
+# The FreeRTOS build system is prone to race conditions, so if it fails with
+# e.g. "unable to find library -lfreertos_tcpip" just try again a few times.
+$ just rebuild_freertos_qemu
+# Make sure we check out the exact correct revision of CHERI-LLVM for the BBL bootloader.
+$ just pin_cheribsd_versions
+# Build QEMU and the BBL bootloaders. Note that the qemu source is inside os-cheribsd/qemu,
+# because the bootloaders are built using a different CHERI-LLVM used for CheriBSD,
+# so this will build CHERI-LLVM a second time.
+# A faster way to go about this would be to build a separate copy of the bootloaders
+# using the FreeRTOS CHERI-LLVM, but I haven't tested this.
+$ just build_qemu
 
 $ just run-qemu-freertos           # Run CheriFreeRTOS inside a QEMU that has IOCap-enabled VirtIO devices
 # or
 $ just run-qemu-freertos-noiocap   # Run CheriFreeRTOS inside a QEMU that has VirtIO devices *without IOCap support*.
 ```
 
+You will see a set of log lines "virtioblk_tranfer failed! type=X, status = 255", this is unrelated to IOCaps - I believe it's part of the disk test suite that runs before the server.
+
 While it's running, visit <http://localhost:2222/freertos.html> to get a webpage served from IOCaps!
+
+Exit QEMU with Ctrl+A - X.
 
 ## Chapter 6 - Run CheriBSD on QEMU
 
-TODO test this
+First, build CheriBSD and QEMU.
 
 ```bash
-$ just build_qemu
+# Make sure we check out the exact correct revision of CHERI-LLVM for CheriBSD and the BBL bootloader.
+$ just pin_cheribsd_versions
+# Build CheriBSD, which will also build the CheriBSD-specific revision of CHERI-LLVM if needed.
 $ just build_cheribsd_qemu
-$ just run-qemu-cheribsd
-# or
-$ just run-qemu-cheribsd-noiocap
+# Build QEMU, which uses standard host Clang, and the BBL bootloaders, which will use the CheriBSD-CHERI-LLVM built previously.
+$ just build_qemu
 ```
 
-TODO what should you do once inside?
+This is sufficient to boot into IOCap-powered BSD.
+Next, build the benchmarking tool.
+
+```bash
+# Build a cross-compiler to a CheriBSD-compatible hybrid ABI, where compiled programs use raw pointers instead of capabilities
+# but can opt into capabilities if desired.
+$ just build_hybrid_sdk_cheribsd 
+# Cross-compile the fio benchmark tool using the hybrid ABI.
+# I used the hybrid ABI to avoid having to diagnose/fix pointer problems in fio.
+$ just build_fio_cross_compile
+# Build the disk image for CheriBSD, which contains cheri-fio and benchmarking scripts
+$ just build_cheribsd_diskimg
+```
+
+Building the disk image will ask you some questions about SSH keys to include in the image.
+These don't matter, at least in my run flows, as other methods are used to interact with the session.
+
+Once that has finished, CheriBSD can be run with the disk image attached.
+
+```bash
+$ just run-qemu-cheribsd           # Run CheriBSD inside a QEMU that has IOCap-enabled VirtIO devices
+# or
+$ just run-qemu-cheribsd-noiocap   # Run CheriBSD inside a QEMU that has VirtIO devices *without IOCap support*.
+```
+
+You should see a few `<VirtIO Block Adapter (IOCap)>`s roll by in the boot log.
+Once you see the following, the system will be fully booted.
+
+```
+Logging in as root...
+2026-07-14T15:12:31.702978+00:00 - login 82 - - login on console as root
+#
+```
+
+Inside, you can make a results directory in the ramdisk, and then run `./bench/bench.sh` (note: different from the plain `bench` command) to run some fio benchmarks.
+
+```
+# mkdir -p ./results/
+# ./bench/bench.sh ./results/
+```
+
+Exit QEMU by running `poweroff` - using the Ctrl+A - X method may corrupt the disk image.
+
+```
+# poweroff
+
+Shutdown NOW!
+poweroff: [pid 109]
+#
+*** FINAL System shutdown message from root@ ***
+
+System going down IMMEDIATELY
+```
 
 ## Chapter 6 - Generate CheriBSD Diff
 
@@ -122,5 +190,9 @@ TODO
 TODO
 
 ## Chapter 7 - IOCap Hardware Synthesis Benchmarks
+
+TODO
+
+## Chapter 7 - Full-System Build
 
 TODO

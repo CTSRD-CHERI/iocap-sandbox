@@ -112,17 +112,15 @@ rebuild_freertos_sim:
     #!/bin/bash
     source {{PYTHON3_VENV}}/bin/activate || { echo "Please create the Python venv; $ just install_venv" ; exit 1 ; }
     python3 ./os-freertos/cheribuild/cheribuild.py freertos-{{FREERTOS_ELF_TARGET}} \
-        --skip-update \
         --freertos/platform de10toooba \
         --freertos/prog main_{{FREERTOS_ELF_DEMO}} \
         --freertos/implicit_mem_0 \
         --freertos/use_virtio_blk \
         --freertos/use_virtio_iocaps \
-        --freertos/source-directory "./os-freertos/freertos/" \
         -d \
-        --source-root {{FREERTOS_CHERIBUILD_SRC_ROOT}} \
         --output-root {{FREERTOS_CHERIBUILD_SIM_OUTPUT}} \
-        --build-root {{FREERTOS_CHERIBUILD_SIM_BUILD}}
+        --build-root {{FREERTOS_CHERIBUILD_SIM_BUILD}} \
+        --config-file "./os-freertos/cheribuild.json"
     python3 {{ELFMANIP}}/elfmanip.py -vvv {{FREERTOS_SIM_ELF_FILE}} info --list-sections
     python3 {{ELFMANIP}}/elfmanip.py -vvv -o {{TOOOBA_FREERTOS_HEX}} -s 0xc0000000 -i 0x40000000 {{FREERTOS_SIM_ELF_FILE}} to-hex
     just describe_git "./os-freertos/freertos" > {{FREERTOS_SIM_BUILDHASH}}
@@ -133,16 +131,14 @@ rebuild_freertos_fpga:
     #!/bin/bash
     source {{PYTHON3_VENV}}/bin/activate || { echo "Please create the Python venv; $ just install_venv" ; exit 1 ; }
     python3 ./os-freertos/cheribuild/cheribuild.py freertos-{{FREERTOS_ELF_TARGET}} \
-        --skip-update \
         --freertos/platform de10toooba \
         --freertos/prog main_{{FREERTOS_ELF_DEMO}} \
         --freertos/use_virtio_blk \
         --freertos/use_virtio_iocaps \
-        --freertos/source-directory "./os-freertos/freertos/" \
         -d \
-        --source-root {{FREERTOS_CHERIBUILD_SRC_ROOT}} \
         --output-root {{FREERTOS_CHERIBUILD_FPGA_OUTPUT}} \
-        --build-root {{FREERTOS_CHERIBUILD_FPGA_BUILD}}
+        --build-root {{FREERTOS_CHERIBUILD_FPGA_BUILD}} \
+        --config-file "./os-freertos/cheribuild.json"
     just describe_git "./os-freertos/freertos" > {{FREERTOS_FPGA_BUILDHASH}}
 
 # Use a implicit_mem_0 flag to remove long-winded unnecessary .bss zeroing code.
@@ -153,16 +149,14 @@ rebuild_freertos_qemu:
     #!/bin/bash
     source {{PYTHON3_VENV}}/bin/activate || { echo "Please create the Python venv; $ just install_venv" ; exit 1 ; }
     python3 ./os-freertos/cheribuild/cheribuild.py freertos-{{FREERTOS_ELF_TARGET}} \
-        --skip-update \
         --freertos/platform qemu_virt \
         --freertos/prog main_{{FREERTOS_ELF_DEMO}} \
         --freertos/use_virtio_blk \
         --freertos/use_virtio_iocaps \
-        --freertos/source-directory "./os-freertos/freertos/" \
         -d \
-        --source-root {{FREERTOS_CHERIBUILD_SRC_ROOT}} \
         --output-root {{FREERTOS_CHERIBUILD_QEMU_OUTPUT}} \
-        --build-root {{FREERTOS_CHERIBUILD_QEMU_BUILD}}
+        --build-root {{FREERTOS_CHERIBUILD_QEMU_BUILD}} \
+        --config-file "./os-freertos/cheribuild.json"
     just describe_git "./os-freertos/freertos" > {{FREERTOS_QEMU_BUILDHASH}}
 
 # Only build the de10 with 1 core - FreeRTOS is not designed to work with two
@@ -247,10 +241,13 @@ prep_diskimg_extras_cheribsd:
     rm -rf {{CHERIBSD_CHERIBUILD_SRC_ROOT}}/extra-files-minimal/root/bench/*
     cp os-cheribsd/cheri-fio/fio {{CHERIBSD_CHERIBUILD_SRC_ROOT}}/extra-files/root/bench/
     cp os-cheribsd/cheri-fio/fio {{CHERIBSD_CHERIBUILD_SRC_ROOT}}/extra-files-minimal/root/bench/
-    cp qasmuna_scripts/cheribsd_benchmarks/* {{CHERIBSD_CHERIBUILD_SRC_ROOT}}/extra-files/root/bench/
-    cp qasmuna_scripts/cheribsd_benchmarks/* {{CHERIBSD_CHERIBUILD_SRC_ROOT}}/extra-files-minimal/root/bench/
+    cp os-cheribsd/benchmark-scripts/* {{CHERIBSD_CHERIBUILD_SRC_ROOT}}/extra-files/root/bench/
+    cp os-cheribsd/benchmark-scripts/* {{CHERIBSD_CHERIBUILD_SRC_ROOT}}/extra-files-minimal/root/bench/
 
 # more recent LLVMs break the version of CheriBSD I'm built on.
+# cheribuild has a --llvm/git-revision option, but it is a lie:
+#   - it is only applied when skip_update == false
+#   - it does not work with commit hashes, I assume it's intended for branch targets(?)
 pin_cheribsd_versions: (_pin_cheribsd_checkout_ver "llvm-project" "https://github.com/CTSRD-CHERI/llvm-project" "578ea4f7ef67d589f0ca7d10ec9e383333567421") (_pin_cheribsd_checkout_ver "gdb" "https://github.com/CTSRD-CHERI/gdb" "7c05fb82db7ddd8e009548b8e853657c3512029f")
 
 _pin_cheribsd_checkout_ver name url commit:
@@ -282,6 +279,7 @@ build_cheribsd_qemu:
         -d \
         --config-file "./os-cheribsd/cheribuild.json"
 
+# Build a cross-compiler into CheriBSD for the hybrid ABI
 build_hybrid_sdk_cheribsd:
     #!/bin/bash
     source {{PYTHON3_VENV}}/bin/activate || { echo "Please create the Python venv; $ just install_venv" ; exit 1 ; }
@@ -494,14 +492,13 @@ generate_fpga_dir:
     cp {{CHERIBSD_FPGA_PURECAP_ELF_FILE}} {{FPGA_DIR}}/arm/cheribsd.purecap.elf
     cp {{CHERIBSD_FPGA_HYBRID_ELF_FILE}} {{FPGA_DIR}}/arm/cheribsd.hybrid.elf
     rsync -Phav --update {{CHERIBSD_FPGA_DISK_IMG}} {{FPGA_DIR}}/arm/cheribsd.fs
-    # cp qasmuna_scripts/kernel-purecap-1002 {{FPGA_DIR}}/arm/franz-kernel-purecap-1002.elf
     cp {{CHERIBSD_FPGA_BUILDHASH}} {{FPGA_DIR}}/arm
     cp DE10Pro-softcore-devicetree/*.elf {{FPGA_DIR}}/arm
     cp -r {{TINYEMU_VIRTIO}} {{FPGA_DIR}}/arm/
     rm -rf {{FPGA_DIR}}/arm/tinyemu-virtio/build
     cp {{EMPTY_DISK_IMG}} {{FPGA_DIR}}/arm/virtio.fs
     cp {{FREERTOS_DISK_IMG}} {{FPGA_DIR}}/arm/freertos.fs
-    cp -r ./qasmuna_scripts/* {{FPGA_DIR}}/arm
+    cp -r ./os-cheribsd/benchmark-scripts {{FPGA_DIR}}/arm
     cp -r ./fmem {{FPGA_DIR}}/arm/
 
     echo "===== FreeRTOS =====" >{{FPGA_DIR}}/Manifest
@@ -701,9 +698,8 @@ disasm file=FREERTOS_SIM_ELF_FILE:
 all-gits:
     find . -type d -exec test -e '{}/.git' ';' -print -exec just describe_git {} ';'
 
-# Enter a shell with the os-cheribsd tools active and ready for cross-compilation to CheriBSD
-# make sure to just build_hybrid_sdk_cheribsd BEFORE you enter a cross-shell
-cross-shell:
+# Enter a shell with the os-cheribsd tools active and ready for cross-compilation to CheriBSD, then build cheri-fio. Run `just build_hybrid_sdk_cheribsd` beforehand.
+build_fio_cross_compile:
 	#!/bin/bash
 	cd os-cheribsd
 	exec bash --init-file <(cat <<-'EOF'
@@ -718,9 +714,9 @@ cross-shell:
 		export CROSS_COMPILE="$(realpath working/output/sdk)"
 
 		$CC -v
+
+		cd cheri-fio && make clean && make
+
+		exit
 	EOF
 	) -i
-
-# Only run this from inside a `$ just cross-shell`
-fio-cross-only:
-    cd os-cheribsd/cheri-fio && make clean && make
