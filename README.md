@@ -155,31 +155,31 @@ $ just run-qemu-cheribsd-noiocap   # Run CheriBSD inside a QEMU that has VirtIO 
 You should see a few `<VirtIO Block Adapter (IOCap)>`s roll by in the boot log.
 Once you see the following, the system will be fully booted.
 
-```
-Logging in as root...
-2026-07-14T15:12:31.702978+00:00 - login 82 - - login on console as root
-#
-```
-
-Inside, you can make a results directory in the ramdisk, and then run `./bench/bench.sh` (note: different from the plain `bench` command) to run some fio benchmarks.
-
-```
-# mkdir -p ./results/
-# ./bench/bench.sh ./results/
-```
-
-Exit QEMU by running `poweroff` - using the Ctrl+A - X method may corrupt the disk image.
-
-```
-# poweroff
-
-Shutdown NOW!
-poweroff: [pid 109]
-#
-*** FINAL System shutdown message from root@ ***
-
-System going down IMMEDIATELY
-```
+> ```
+> Logging in as root...
+> 2026-07-14T15:12:31.702978+00:00 - login 82 - - login on console as root
+> #
+> ```
+>
+> Inside, you can make a results directory in the ramdisk, and then run `./bench/bench.sh` (note: different from the plain `bench` command) to run some fio benchmarks.
+>
+> ```
+> # mkdir -p ./results/
+> # ./bench/bench.sh ./results/
+> ```
+>
+> Exit QEMU by running `poweroff` - using the Ctrl+A - X method may corrupt the disk image.
+>
+> ```
+> # poweroff
+>
+> Shutdown NOW!
+> poweroff: [pid 109]
+> #
+> *** FINAL System shutdown message from root@ ***
+>
+> System going down IMMEDIATELY
+> ```
 
 ## Chapter 6 - Generate CheriBSD Diff
 
