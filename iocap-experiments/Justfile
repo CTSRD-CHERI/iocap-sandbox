@@ -1,15 +1,12 @@
 default:
     @just --list
 
-jupyter:
-    uv run --with jupyter jupyter lab
-
 run-cap-scan:
     #!/bin/bash
     cargo run --bin scan -- >./rust_caps_scanner/results/format_results.toml
 
 show-cap-scan mode="bl":
-    uv run python ./python/rust_caps_scanner_graph.py --mode {{mode}} ./rust_caps_scanner/results/format_results.toml
+    uv run python ./rust_caps_scanner/rust_caps_scanner_graph.py --mode {{mode}} ./rust_caps_scanner/results/format_results.toml
 
 gen-2026-tests:
     # n = how many of each 'category'. --gen-0cav creates ~64 categories, one per pow2 box, of valid cap. --gen-all-edge-cases creates one category per edge case.

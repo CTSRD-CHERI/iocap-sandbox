@@ -228,7 +228,8 @@ if __name__ == '__main__':
         n_total_figures = len(caps)
         f, axs = optimal_n_subplots(n_total_figures)
         # print(axs)
-        for i, (cap, ax) in enumerate(zip(caps, axs.flat)):
+        axs = axs.flat if n_total_figures > 1 else [axs]
+        for i, (cap, ax) in enumerate(zip(caps, axs)):
             plot_on_ax(cap, base_data[cap], ax, color_idx=i, label="base", plot_kind="base")
             plot_on_ax(cap, length_data[cap], ax, color_idx=i, label="length", plot_kind="len")
             config_ax(ax, title=cap)
@@ -287,7 +288,7 @@ if __name__ == '__main__':
         t = next(t for t in results[cap] if t["name"] == "base_align_legacy")
         td = test_points(t, x="intended_len", y="base_align")
         plot_on_ax(cap, td, ax, color_idx=2, label=f"cav1+2 precision")
-        
+
         config_ax(ax, title="IOCap2024_11 Precision Potential")
     elif args.mode == "iocap_thesisopt:reduct":
         f, ax = optimal_n_subplots(1)

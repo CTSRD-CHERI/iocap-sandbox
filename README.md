@@ -2,6 +2,7 @@
 
 This repository (WIP) contains all of the relevant programs, hardware designs, experiments, and results used in the creation of Samuel W. Stark's PhD thesis.
 Please contact [samuel.stark@cl.cam.ac.uk](mailto:samuel.stark@cl.cam.ac.uk) if you have any questions.
+Note: all references to figures and chapters are up-to-date as of the initial submission, I don't expect them to change significantly post-corrections but they might.
 
 ## Checking out
 
@@ -37,6 +38,8 @@ $ apt install libfuse3-dev
 $ apt install fusefat dosfstools
 $ apt install device-tree-compiler
 $ apt install libgmp-dev libmpfr-dev
+# OpenSSL used by the Rust IOCap implementations
+$ apt install libssl-dev
 ```
 
 Once these tools are installed, you should be able to run various experiments.
@@ -56,11 +59,176 @@ TODO
 
 ## Chapter 5 - Capability Format Simulations
 
-TODO
+The capability precision and reduction diagrams in the Evaluation section of Chapter 5 (Figs. 5.13-5.20) are generated based on results from the ["rust_caps_scanner" program](./iocap-experiments/rust_caps_scanner).
+This program simulates many capability formats on top of the tested IOCap formats, and the results were used to manually double check other tables and assertions about those other formats in the text.
+Each format is scanned multiple times for different properties.
+Each scan is based on a monotonic function `f(x) -> y` (e.g. `f(x)` could encode a capability with a fixed base address of length `x` and return the precision of the length encoding).
+`x` is incremented by a `step`, which doubles until `f(x)` changes, at which point the gap between the last known `x` and `x + step` is binary-searched for the transition point.
+This allows the whole space between 1 and $2^{64}$ to be searched very quickly, as there are few transition points - in these diagrams, `f(x)` typically ranges between 0 and 64.
+The full scanning logic can be found in [`scans.rs`](./iocap-experiments/rust_caps_scanner/src/scans.rs).
+The output is saved in [`./iocap-experiments/rust_caps_scanner/results/format_results.toml`](./iocap-experiments/rust_caps_scanner/results/format_results.toml).
+
+```bash
+# Run the caps scanner experiment, generating results.toml.
+$ just iocap-experiments/run-cap-scan
+```
+
+A basic visualisation of these results can be generated with matplotlib:
+
+```bash
+# Plot a base-precision and length-precision graph, each comparing all formats
+$ just iocap-experiments/show-cap-scan
+$ just iocap-experiments/show-cap-scan bl
+
+# Plots a single combined base+length graph for each format
+$ just iocap-experiments/show-cap-scan caps
+# Pass arguments to limit to specific formats
+$ just iocap-experiments/show-cap-scan caps:cheriv9,iocap_thesisopt_cav12_complex
+
+# Plot separate base and length graphs for each format
+$ just iocap-experiments/show-cap-scan split:cheriv9,iocap_thesisopt_cav12_complex
+
+# Plot a separate graph of reduction potential for each format
+$ just iocap-experiments/show-cap-scan reduct:iocap_thesisopt_cav1_complex,iocap_thesisopt_cav12_complex
+
+# Plot a comparison of the given formats' base and length precision
+$ just iocap-experiments/show-cap-scan compare:cheriv9,iocap_thesisopt_cav12
+# Plot a comparison of the given formats' reduction
+$ just iocap-experiments/show-cap-scan compareduct:iocap_thesisopt_cav1_complex,iocap_thesisopt_cav12_complex
+```
+
+The graphs from Chapter 5 can all be replicated (albeit without the same formatting, as the code to generate the final graphs is embedded in the thesis text itself **TODO link to that repository**) with these commands.
+
+```bash
+# (Fig 5.13)
+$ just iocap-experiments/show-cap-scan caps:iocap_thesisopt
+# (Fig 5.14)
+$ just iocap-experiments/show-cap-scan caps:iocap2024_11
+# (Fig 5.15)
+$ just iocap-experiments/show-cap-scan iocap_thesisopt:reduct
+# (Fig 5.16)
+$ just iocap-experiments/show-cap-scan iocap2024_11:reduct
+# (Fig 5.17)
+$ just iocap-experiments/show-cap-scan compare:iocap_thesisopt,iocap_thesisopt_cav1,iocap_thesisopt_cav12
+# (Fig 5.18)
+$ just iocap-experiments/show-cap-scan compare:cheriv9,iocap_thesisopt_cav12
+# (Fig 5.19)
+$ just iocap-experiments/show-cap-scan compareduct:iocap_thesisopt_cav1_complex,iocap_thesisopt_cav12_complex
+# (Fig 5.20)
+$ just iocap-experiments/show-cap-scan compare:cheriv9,iocap_thesisopt_cav1_complex,iocap_thesisopt_cav12_complex
+```
+
+### Scans
+
+Here is an exhaustive list of the scans.
+
+```
+cheriv9.base_align_legacy
+cheriv9.length_align_legacy
+cheriv9.base_align_unified
+cheriv9.length_align_unified
+```
+
+CHERI ISAv9 scans, both "legacy" (with a bespoke scanning function for the format) and "unified" (using a generic scanning function over a capability trait), which return the same results.
+Implemented using the canonical [cheri-compressed-cap](https://github.com/CTSRD-CHERI/cheri-compressed-cap) C library, specifically [my fork](https://github.com/theturboturnip/cheri-compressed-cap) with Rust bindings.
+**TODO get the Rust bindings upstreamed**
+
+```
+rv64y.base_align_legacy
+rv64y.length_align_legacy
+rv64y.base_align_unified
+rv64y.length_align_unified
+```
+
+Scans for the RISC-V RV64Y format, both "legacy" (with a bespoke scanning function for the format) and "unified" (using a generic scanning function over a capability trait), which return the same results.
+Identical to CHERI ISAv9, though the internal implementation is slightly different (I believe the subnormal or "internal exponent" flag is inverted, for example).
+Implemented using the canonical [cheri-compressed-cap](https://github.com/CTSRD-CHERI/cheri-compressed-cap) C library, specifically [my fork](https://github.com/theturboturnip/cheri-compressed-cap) with Rust bindings.
+**TODO get the Rust bindings upstreamed**
+
+```
+cheri256.base_align_legacy
+cheri256.length_align_legacy
+cheri256.base_align_unified
+cheri256.length_align_unified
+```
+
+Scans for the CHERI-256 format, both "legacy" (with a bespoke scanning function for the format) and "unified" (using a generic scanning function over a capability trait), which return the same results.
+Full precision throughout, as expected from the larger format.
+Implemented using the canonical [cheri-compressed-cap](https://github.com/CTSRD-CHERI/cheri-compressed-cap) C library, specifically [my fork](https://github.com/theturboturnip/cheri-compressed-cap) with Rust bindings.
+**TODO get the Rust bindings upstreamed**
+
+```
+iocap2024_11.base_align_legacy
+iocap2024_11.length_precision_legacy_pessimistic
+iocap2024_11.length_precision_legacy_optimistic
+iocap2024_11.length_precision_legacy_semioptimistic
+iocap2024_11_cavs.base_align_legacy
+iocap2024_11_cavs.cav1_reduction
+iocap2024_11_cavs.cav12_reduction
+iocap2024_11_simulated_improved_cavs.base_align_unified
+iocap2024_11_simulated_improved_cavs.length_align_unified
+iocap2024_11_simulated_improved_cavs.reduction
+```
+
+The IOCap-VirtIO format, including the initial region `iocap2024_11`, index caveat `iocap2024_11_cavs.cav1_reduction`, range caveat `iocap2024_11_cavs.cav12_reduction`, and a variant that allows the range caveat to use a nonzero `x` in the null case `iocap2024_11_simulated_improved_cavs`.
+
+`length_precision_legacy_{pessimistic,optimistic,semioptimistic}` are the same test using more-aligned or less-aligned base addresses - for the thesis, extremely poorly aligned base addresses are always used. 
+
+```
+mmachine.base_align_unified
+mmachine.length_align_unified
+```
+
+The M-Machine format.
+
+```
+aries.base_align_unified
+aries.length_align_unified
+```
+
+The Aries format.
+
+
+```
+lowfat.base_align_unified
+lowfat.length_align_unified
+```
+
+The Low-Fat format.
+
+```
+iocap_thesisdemo32.base_align_unified
+iocap_thesisdemo32.length_align_unified
+```
+
+A demo format for my generic IOCap implementation using the 32-0-8-3-1-1 format described in section 5.3.1.
+
+```
+iocap_thesisopt.base_align_unified
+iocap_thesisopt.length_align_unified
+iocap_thesisopt_cav1.base_align_unified
+iocap_thesisopt_cav1.length_align_unified
+iocap_thesisopt_cav1.reduction
+iocap_thesisopt_cav12.base_align_unified
+iocap_thesisopt_cav12.length_align_unified
+iocap_thesisopt_cav12.reduction
+iocap_thesisopt_cav1_complex.base_align_unified
+iocap_thesisopt_cav1_complex.length_align_unified
+iocap_thesisopt_cav1_complex.reduction
+iocap_thesisopt_cav12_complex.base_align_unified
+iocap_thesisopt_cav12_complex.length_align_unified
+iocap_thesisopt_cav12_complex.reduction
+```
+
+The "optimal" format used in the thesis, with the initial region `iocap_thesisopt`, both initial caveats `iocap_thesisopt_cav1` & `iocap_thesisopt_cav12`, and variants with the improved index caveat `iocap_thesisopt_cav1_complex` & `iocap_thesisopt_cav12_complex`.
 
 ## Chapter 5/6/7 - IOCap Implementation Libraries & Testing
 
 TODO
+
+The different implementations are found in `iocap-experiments`:
+
+- 
 
 ## Chapter 6 - Run FreeRTOS on DE10 SoC in Simulation
 

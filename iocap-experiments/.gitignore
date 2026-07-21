@@ -1,5 +1,1 @@
 /target
-
-**/*.pyc
-.venv
-poetry.lock

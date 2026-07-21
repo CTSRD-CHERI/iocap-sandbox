@@ -3,3 +3,6 @@ output
 h2f.log
 h2flw.log
 simports
+
+**/*.pyc
+**/.DS_Store
