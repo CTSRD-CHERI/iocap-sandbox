@@ -73,7 +73,7 @@ These will take a little while, roughly 10min on my PC, as the simulation is sin
 Not all the simulations run are actually used in the thesis, and that subset can be run manually (approx 4mins):
 
 ```bash
-# Run just the benches from the thesis
+# Run just the simulations for the thesis
 $ just iocap-experiments/nvmesim/run-thesis
 ```
 
@@ -314,7 +314,7 @@ The "optimal" format used in the thesis, with the initial region `iocap_thesisop
 - `iocap-experiments/libccap` contains pure C implementations of an encoder and decoder for the v2024_11 format described in the thesis. It allows null caveats only when 'index' = 0 or 'x' = 0, and it does *not* support the improved index caveat (section 5.5.4).
   - This implementation is used for the `tinyemu` peripheral emulator, the CheriFreeRTOS drivers, and the CheriBSD drivers.
 
-## Testing
+### Testing the Software
 
 The `rust_caps` crate is the golden model, from which all test vectors are generated.
 The `rust_caps_testgen` crate generates `:`-separated CSV files for different permuatations of valid and edge-case IOCaps using `rust_caps`.
