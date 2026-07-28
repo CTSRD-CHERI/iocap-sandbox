@@ -748,7 +748,8 @@ impl<
 }
 
 /// In the thesis, I propose two optimizations for the index caveat ($5.5.4).
-/// On top of the the precision mitigation, i.e. "allowing the base to be aligned to half the length", this implements the reduction mitigation i.e. "compute its exponent relative to the actual initial length" 
+/// On top of the the precision mitigation, i.e. "allowing the base to be aligned to half the length", this implements the reduction mitigation i.e. "compute its exponent relative to the actual initial length".
+/// This also assumes null caveats can encode with non-zero 'index'. 
 #[derive(Debug, Clone, Copy)]
 pub struct SubalignTightIndexCaveatOf<
     T: InitialRegion + BasicCustomCap,

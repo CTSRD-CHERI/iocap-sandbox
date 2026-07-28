@@ -15,9 +15,9 @@ gen-2026-tests:
     cargo run --bin gen_rand_csv -- -n 100 --gen-all-edge-cases --seed 2 -o ./tests_cap2024_11_2026_04/valid_sig_only_edge_cases.txt
     cargo run --bin gen_rand_csv -- -n 10000 --gen-edge 6 --gen-edge 7 --seed 3 -o ./tests_cap2024_11_2026_04/valid_sig_only_new_edge_cases.txt
 
-validate-2026:
+validate-python-2026:
     #!/bin/bash
-    uv run ./python/cap2024_11_decoder_test.py ./tests_cap2024_11_2026_04/valid_sig_only_new_edge_cases.txt
+    uv run ./python_caps/cap2024_11_decoder_test.py ./tests_cap2024_11_2026_04/valid_sig_only_new_edge_cases.txt
     case $? in
         0)
             echo "Cap2024_11 basic should have failed"; exit 1; ;;
@@ -25,7 +25,7 @@ validate-2026:
             echo "Cap2024_11 basic failed, as expected"; ;;
     esac
 
-    uv run ./python/cap2024_11_2026_04_decoder_test.py ./tests_cap2024_11_2026_04/valid_sig_only_new_edge_cases.txt
+    uv run ./python_caps/cap2024_11_2026_04_decoder_test.py ./tests_cap2024_11_2026_04/valid_sig_only_new_edge_cases.txt
     case $? in
         0)
             echo "Cap2024_11 2026_04 didn't fail!"; ;;
@@ -33,10 +33,13 @@ validate-2026:
             echo "Cap2024_11 2026_04 failed???"; exit 1; ;;
     esac
 
-    uv run ./python/cap2024_11_2026_04_decoder_test.py ./tests_cap2024_11_2026_04/valid_sig_all_edge_cases.txt
+    uv run ./python_caps/cap2024_11_2026_04_decoder_test.py ./tests_cap2024_11_2026_04/valid_sig_all_edge_cases.txt
     case $? in
         0)
             echo "Cap2024_11 2026_04 didn't fail!"; exit 0; ;;
         *)
             echo "Cap2024_11 2026_04 failed???"; exit 1; ;;
     esac
+
+validate-libccap-2026:
+    just libccap/test

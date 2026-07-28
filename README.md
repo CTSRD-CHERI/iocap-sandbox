@@ -69,7 +69,7 @@ The full scanning logic can be found in [`scans.rs`](./iocap-experiments/rust_ca
 The output is saved in [`./iocap-experiments/rust_caps_scanner/results/format_results.toml`](./iocap-experiments/rust_caps_scanner/results/format_results.toml).
 
 ```bash
-# Run the caps scanner experiment, generating results.toml.
+# Run the caps scanner experiment, generating format_results.toml.
 $ just iocap-experiments/run-cap-scan
 ```
 
@@ -97,7 +97,7 @@ $ just iocap-experiments/show-cap-scan compare:cheriv9,iocap_thesisopt_cav12
 $ just iocap-experiments/show-cap-scan compareduct:iocap_thesisopt_cav1_complex,iocap_thesisopt_cav12_complex
 ```
 
-The graphs from Chapter 5 can all be replicated (albeit without the same formatting, as the code to generate the final graphs is embedded in the thesis text itself **TODO link to that repository**) with these commands.
+The graphs from Chapter 5 can all be replicated with these commands.
 
 ```bash
 # (Fig 5.13)
@@ -117,6 +117,9 @@ $ just iocap-experiments/show-cap-scan compareduct:iocap_thesisopt_cav1_complex,
 # (Fig 5.20)
 $ just iocap-experiments/show-cap-scan compare:cheriv9,iocap_thesisopt_cav1_complex,iocap_thesisopt_cav12_complex
 ```
+
+They will not have the same formatting as in the thesis, but they originate from the same data.
+The thesis itself is written in [turnip_text](https://github.com/theturboturnip/turnip_text), a document description language of my own design, which uses embedded Python snippets to parse [format_results.toml](./iocap-experiments/rust_caps_scanner/results/format_results.toml) and generate bespoke matplotlib plots.
 
 ### Scans
 
@@ -179,14 +182,14 @@ mmachine.base_align_unified
 mmachine.length_align_unified
 ```
 
-The M-Machine format.
+The M-Machine format, which I implemented manually in Rust.
 
 ```
 aries.base_align_unified
 aries.length_align_unified
 ```
 
-The Aries format.
+The Aries format, which I implemented manually in Rust.
 
 
 ```
@@ -194,14 +197,14 @@ lowfat.base_align_unified
 lowfat.length_align_unified
 ```
 
-The Low-Fat format.
+The Low-Fat format, which I implemented manually in Rust.
 
 ```
 iocap_thesisdemo32.base_align_unified
 iocap_thesisdemo32.length_align_unified
 ```
 
-A demo format for my generic IOCap implementation using the 32-0-8-3-1-1 format described in section 5.3.1.
+A generic IOCap initial-region implementation, configured to use the 32-0-8-3-1-1 format described in section 5.3.1.
 
 ```
 iocap_thesisopt.base_align_unified
@@ -222,13 +225,78 @@ iocap_thesisopt_cav12_complex.reduction
 
 The "optimal" format used in the thesis, with the initial region `iocap_thesisopt`, both initial caveats `iocap_thesisopt_cav1` & `iocap_thesisopt_cav12`, and variants with the improved index caveat `iocap_thesisopt_cav1_complex` & `iocap_thesisopt_cav12_complex`.
 
-## Chapter 5/6/7 - IOCap Implementation Libraries & Testing
+## Chapter 5/6/7 - IOCap Software Implementations
 
-TODO
+- `iocap-experiments/rust_caps`: The initial Rust implementation.
+  - Includes three versions: v1, a rough first attempt which encodes three caveats; v2024_02, which mostly matches the format presented in Chapter 5, but doesn't support the 'null case' for caveats; and v2024_11, which supports 'null' caveats.
+  - v2024_11 only supports null caveats where 'index' = 0 or 'x' = 0 (see sections 5.3.3 & 5.3.4), and it does *not* support the improved index caveat (section 5.5.4).
+  - The library can link against OpenSSL or use a handrolled AES implementation (which I would not recommend in practice, and was mostly developed to familiarize myself with AES concepts).
+  - The library includes functions to generate random IOCaps.
+    - Valid IOCaps and 'edge case' IOCaps can be generated, where the different 'edge cases' are enumerated in `rust_caps/src/capability/v2024_{02,11}/rand.rs`.
+  - `iocap-experiments/rust_caps_c` packages this crate into a `.a` static library and `.h` C header file. A vendored version of this library is used to generate random IOCaps for hardware testbenches.
+- `iocap-experiments/rust_caps_scanner` includes implementations of the M-Machine, Aries, and Low-Fat capabilties alongside a paramaterizable IOCap in `rust_caps_scanner/src/caps`.
+  - This includes a parameterized initial resource e.g. for the "optimal" 64-12-8-3-2-8 format:
+    ```rust
+    pub type ThesisOptIocap =
+    GenericIocapGuaranteedTwoDepthInitialRegion<64, 12, 8, { 1 << 3 }, { 1 << 2 }, 8>;
+    ```
+  - and caveat implementations e.g. for the improved (15-4 index) and (12-12 range) caveats presented in section 5.5.4:
+    ```rust
+    pub type ThesisOptComplexCav1Iocap = SubalignTightIndexCaveatOf<ThesisOptIocap, 4>;
+    pub type ThesisOptComplexCav2Iocap = RangeCaveatOf<ThesisOptComplexCav1Iocap, 12, true>;
+    ```
+  - See `iocap-experiments/rust_caps_scanner/src/scans/iocap_general.rs` for more examples.
+- `iocap-experiments/python_caps` contains three cycle-level Python decoders, which were used to design the hardware versions.
+  - `cap2024_02_decoder_test.py` for v2024_02
+  - `cap2024_11_decoder_test.py` for an older version of v2024_11
+  - `cap2024_11_2026_04_decoder_test.py` for the "optimal" format described in the thesis. The differences from v2024_11 are marked with `# 2026_04` comments. It allows null caveats only when 'index' = 0 or 'x' = 0, and it does *not* support the improved index caveat (section 5.5.4).
+- `iocap-experiments/libccap` contains pure C implementations of an encoder and decoder for the v2024_11 format described in the thesis. It allows null caveats only when 'index' = 0 or 'x' = 0, and it does *not* support the improved index caveat (section 5.5.4).
+  - This implementation is used for the `tinyemu` peripheral emulator, the CheriFreeRTOS drivers, and the CheriBSD drivers.
 
-The different implementations are found in `iocap-experiments`:
+## Testing
 
-- 
+The `rust_caps` crate is the golden model, from which all test vectors are generated.
+The `rust_caps_testgen` crate generates `:`-separated CSV files for different permuatations of valid and edge-case IOCaps using `rust_caps`.
+Examples of these files can be found in the `iocap-experiments/tests_cap{2024_02,2024_11,2024_11_2026_04}` folders, and the latter can be regenerated:
+
+```bash
+# Generate iocap-experiments/tests_cap_2024_11_2026_04, which includes edge cases for null range caveats. 
+$ just iocap-experiments/gen-2026-tests
+```
+
+The Python implementation can be tested against the 2024_11_2026_04 test vectors, which also tests that the 2024_11 impl *fails* under those vectors:
+
+```bash
+$ just iocap-experiments/validate-python-2026
+```
+
+which should give the following output:
+
+```
+<a Python RuntimeError trace>
+Cap2024_11 basic failed, as expected
+Cap2024_11 2026_04 didn't fail!
+Cap2024_11 2026_04 didn't fail!
+```
+
+`libccap` can also be tested against the 2024_11_2026_04 test vectors.
+This command also tests it against the plain 2024_11 vectors, as the 2026_04 variant is strictly more permissive.
+
+```bash
+$ just iocap-experiments/validate-libccap-2026
+```
+
+which will produce a set of non-fatal errors related to the improved index caveat (section 5.5.4), but will not fail.
+
+```
+570 Non-fatal: reencoding line 572 with ccap2024_11_init_virtio_cavs_exact() produced an error CCapResult_Encode_UnrepresentableBaseRange, ignoring because this is likely due to index caveat being bad (thesis $5.5.4)
+Non-fatal: reencoding line 572 with ccap2024_11_init_cavs_exact() produced an error CCapResult_Encode_UnrepresentableBaseRange, ignoring because this is likely due to index caveat being bad (thesis $5.5.4)
+```
+
+This is because the tests are built around decoding the IOCap, then attempting to re-encode it from the decoded range.
+Certain edge cases rely on specific values of the non-improved index caveat which the encoding algorithm will not arrive at normally.
+For example, instead of starting from a very large initial region, then using the improved index caveat to select a reduced cav-1 range entirely inside that, the re-encode will start from a tight initial region and be forced to use a null cav-1 which doesn't reduce.
+Using the improved index caveat from section 5.5.4 and allowing null index caveats where 'index' != 0 would make the encoder more flexible.
 
 ## Chapter 6 - Run FreeRTOS on DE10 SoC in Simulation
 
