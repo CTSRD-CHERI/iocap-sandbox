@@ -292,6 +292,7 @@ The "optimal" format used in the thesis, with the initial region `iocap_thesisop
   - Includes three versions: v1, a rough first attempt which encodes three caveats; v2024_02, which mostly matches the format presented in Chapter 5, but doesn't support the 'null case' for caveats; and v2024_11, which supports 'null' caveats.
   - v2024_11 only supports null caveats where 'index' = 0 or 'x' = 0 (see sections 5.3.3 & 5.3.4), and it does *not* support the improved index caveat (section 5.5.4).
   - The library can link against OpenSSL or use a handrolled AES implementation (which I would not recommend in practice, and was mostly developed to familiarize myself with AES concepts).
+  - The library uses [a "checked bits" module](./iocap-experiments/rust_caps/src/checked_bits.rs) to ensure specific operations will never exceed their intended bit widths at runtime.
   - The library includes functions to generate random IOCaps.
     - Valid IOCaps and 'edge case' IOCaps can be generated, where the different 'edge cases' are enumerated in `rust_caps/src/capability/v2024_{02,11}/rand.rs`.
   - `iocap-experiments/rust_caps_c` packages this crate into a `.a` static library and `.h` C header file. A vendored version of this library is used to generate random IOCaps for hardware testbenches.
@@ -316,7 +317,14 @@ The "optimal" format used in the thesis, with the initial region `iocap_thesisop
 
 ### Testing the Software
 
-The `rust_caps` crate is the golden model, from which all test vectors are generated.
+The `rust_caps` crate is the golden model from which all test vectors are generated.
+It has some manual tests which can be run directly.
+These include tests for the v2024_11 and v2024_02 encoders, random IOCap generation, handrolled crypts, and the "checked bits" library.
+
+```bash
+$ (cd iocap-experiments/rust_caps && cargo test)
+```
+
 The `rust_caps_testgen` crate generates `:`-separated CSV files for different permuatations of valid and edge-case IOCaps using `rust_caps`.
 Examples of these files can be found in the `iocap-experiments/tests_cap{2024_02,2024_11,2024_11_2026_04}` folders, and the latter can be regenerated:
 
