@@ -55,7 +55,68 @@ TODO write a bit about this, explain the original results for the thesis are in 
 
 ## Chapter 4 - NVMe Simulations
 
-TODO
+The Chapter 4 evaluation uses [an NVMe queue simulation in `iocap-experiments/nvmesim`](./iocap-experiments/nvmesim`) to model the behaviour of lease allocation under in-order and out-of-order op completion.
+These simulations are configured using TOML files, where each file describes a different simulation context.
+Each context consists of a latency histogram for read operations (write operations are included in the config but are not modelled, because modeling them separately would be equivalent to modelling reads with a different histogram), the IOPS number, the number of ops per queue, the number of queues, and a set of IOCap $L_\text{ops}$ values to model.
+The simulation then runs, generating new ops at a rate equal to IOPS, and sampling the histogram to determine how long they take to complete.
+A separate `IOCapLeaseContext` for every $L_\text{ops}$ value for each queue (and one per $L_\text{ops}$ value for all queues combined) run in parallel, measuring the number of leases that would need to be open concurrently to handle the ops, and how long those leases are open for.
+The outputs are stored in `iocap-experiments/nvmesim/nvme_queue_results`.
+
+You can rerun the experiments with a single command:
+
+```bash
+# Run all of them
+$ just iocap-experiments/nvmesim/run-all
+```
+
+These will take a little while, roughly 10min on my PC, as the simulation is single-threaded and written in Python.
+Not all the simulations run are actually used in the thesis, and that subset can be run manually (approx 4mins):
+
+```bash
+# Run just the benches from the thesis
+$ just iocap-experiments/nvmesim/run-thesis
+```
+
+The thesis uses data from the following simulations:
+
+> ```just
+> run-thesis:
+>     # Figure 4.3, Table 4.2
+>     just run in_order_q08 1
+>     just run in_order_q32 2
+>
+>     # Figure 4.6, Table 4.3
+>     just run out_order_q32_nq1 4
+>     just run out_order_q128_nq1_unsaturated 14
+>
+>     # Figure 4.8, Table 4.4, Figure 4.10
+>     just run out_order_q16_nq8_unsaturated 15
+>
+>     # Figure 4.11, 4.12, Table 4.5, 4.6
+>     just run out_order_haas_q09 13
+>     just run out_order_haas_q10 16
+> ```
+
+The graphs in the thesis are generated at document build time using the relevant output TOML files, so there isn't a convenient way to replicate them here.
+This includes the latency distribution graphs (Figs 4.6a, 4.11) which are generated from the `"exposed_to_completed"` latency entries of a specific queue from the relevant results TOML.
+These have been manually checked to match the input histograms specified in the configs, which are generated using the `gen_nvme_dist.py` script:
+
+```bash
+# The out-of-order latency in Fig 4.6a:
+# - average 50us
+# - max out at t_max=100us
+# - with a 20us-wide steep line before the "split point"
+# - where the split point is the 90th percentile
+# - and t_max is the 100th percentile
+$ uv run ./iocap-experiments/nvmesim/gen_nvme_dist.py  50000 100000 20000 --split 0.9 --t_max_pos 1
+# The out-of-order latency in Fig 4.11
+# - average 175us
+# - max out at t_p99 = 400us
+# - with a 20us-wide steep line before the split point (i.e. assuming the 400us is a far outlier)
+# - where the split point is the 90th percentile
+# - and t_p99 is the 99th percentile
+$ uv run ./iocap-experiments/nvmesim/gen_nvme_dist.py 175000 400000 20000 --split 0.9 --t_max_pos 0.99
+```
 
 ## Chapter 5 - Capability Format Simulations
 

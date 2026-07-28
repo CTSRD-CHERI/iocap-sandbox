@@ -6,7 +6,7 @@ default:
 basic:
     uv run ./basic_nvme_queue.py ./nvme_queue_results/basic/ --seed 0 --trace queue00
 
-bench-all:
+run-all:
     just run in_order_q08 1
     just run in_order_q32 2
     just run in_order_q1024 3
@@ -52,6 +52,22 @@ run-in-order:
     just run in_order_q1024 3
     just run in_order_fast_q32 5
     just run in_order_slow_q32 6
+
+run-thesis:
+    # Figure 4.3, Table 4.2
+    just run in_order_q08 1
+    just run in_order_q32 2
+
+    # Figure 4.6, Table 4.3
+    just run out_order_q32_nq1 4
+    just run out_order_q128_nq1_unsaturated 14
+
+    # Figure 4.8, Table 4.4, Figure 4.10
+    just run out_order_q16_nq8_unsaturated 15
+
+    # Figure 4.11, 4.12, Table 4.5, 4.6
+    just run out_order_haas_q09 13
+    just run out_order_haas_q10 16
 
 [unix]
 run config seed *args:
