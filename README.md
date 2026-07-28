@@ -40,6 +40,8 @@ $ apt install device-tree-compiler
 $ apt install libgmp-dev libmpfr-dev
 # OpenSSL used by the Rust IOCap implementations
 $ apt install libssl-dev
+# TCL used for Bluespec tests
+$ apt install libtcl8.6
 ```
 
 Once these tools are installed, you should be able to run various experiments.
@@ -52,6 +54,8 @@ $ just install_venv             # Set up Python using UV
 # Experiments
 
 TODO write a bit about this, explain the original results for the thesis are in results/thesis, explain that they can be replicated and compared.
+
+TODO write a script that compares results
 
 ## Chapter 4 - NVMe Simulations
 
@@ -492,12 +496,54 @@ TODO
 
 ## Chapter 7 - IOCap Hardware UVM Testing/Benchmarking
 
-TODO
+Chapter 7 describes the IOCap hardware components, which can be found in [`soc/common/de10pro-cheri-bgas/bluespec/IOCapAXI`](./soc/common/de10pro-cheri-bgas/bluespec/IOCapAXI).
+Their tests are described in [the `testbenches` subfolder](./soc/common/de10pro-cheri-bgas/bluespec/IOCapAXI/testbenches).
+
+The AES testbenches are written in Bluespec itself:
+
+```bash
+$ just soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/build-aes
+$ just soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/test-aes
+```
+
+The UVM tests are mainly described in [`include/tb.h`](./soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/testbenches/include/tb.h) and [`exposer_tests_uvm.h`](./soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/testbenches/exposer_tests_uvm.h), which use C++ templates so they can be parameterized on different models (see the various .cpp files in the testbenches subfolder for examples.)
+These include models of the same hardware with different parameters, e.g. with different checker pool sizes.
+
+Testing has been performed with Bluespec 2023.07 and Verilator 5.026, and the testbench C++ files require C++20.
+The tests for all relevant implementations can be run like so, and will create a file [`results/hardware_latency.toml`](./soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/testbenches/results/hardware_latency.toml).
+These will take a while and will generate a lot of logs unless you pipe them to /dev/null.
+Most of the time taken in the simulation itself is in an overly dramatic set of revoke-while-DMAing tests "UVMRevokeOverMMIOBenchmark", where I created many permutations (revoke 1 cycle later, then another, then another, etc) because the output data was noisy and I wanted to capture a maximum.
+
+```bash
+$ just soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/test-combined-v6-allpool >/dev/null
+$ just soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/test-soc-ver >/dev/null
+# Generate `results/hardware_latency.toml`
+$ just soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/regen-tb-paper-reports
+```
+
+A few UVMRollingUploadRevokeMMIOBenchmark tests may fail, which is fine - these are the rolling open-close tests that fail when the TODO why? I think it's a collision thing, like one state machine moves too quickly or things complete too quickly...
+
+TODO describe konata, which was used to generate figure 7.4
+
+[`results/hardware_latency.toml`](./soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/testbenches/results/hardware_latency.toml) is used to generate table 7.2, figure 7.5, and tables 7.4 and 7.5. 
 
 ## Chapter 7 - IOCap Hardware Synthesis Benchmarks
 
-TODO
+Replicating the synthesis experiments is possible, but not advised.
+It does a 32-seed sweep for 9 different projects, which took my 12-core 64GB system multiple days to complete.
+They require Quartus 23.2 Pro, which you will probably need a license for.
+If you have the time, hardware, and license, you can regenerate the outputs with a single command.
+
+```bash
+# If needed, regenerates relevant Verilog files from the Bluespec source code automatically.
+# Generates hardware_synths.toml automatically.
+$ just soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/synths/resynth-paper-reports
+```
+
+The results will be stored in [`IOCapAxi/synths/hardware_synths.toml`](./soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/synths/hardware_synths.toml), which is used to generate tables 7.2 and 7.3.
 
 ## Chapter 7 - Full-System Build
 
 TODO
+
+`build_de10_bitfiles rebuild_freertos_fpga build_cheribsd_fpga build_cheribsd_fpga_device_trees select_de10_latest_local generate_fpga_dir`
