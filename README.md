@@ -544,6 +544,23 @@ The results will be stored in [`IOCapAxi/synths/hardware_synths.toml`](./soc/com
 
 ## Chapter 7 - Full-System Build
 
-TODO
+This can be split into two steps:
+1. Build the FPGA bitfile itself (takes a long time) TODO THIS DOESNT WORK
+   ```bash
+   $ just build_de10_bitfiles
+   ```
+2. Once the bitfiles are done, generate a folder with all relevant kernel builds, device trees, convenience scripts, benchmarks.
+   ```bash
+   $ just rebuild_freertos_fpga build_cheribsd_fpga build_cheribsd_fpga_device_trees select_de10_latest_local
+   $ just generate_fpga_dir
+   ```
 
-`build_de10_bitfiles rebuild_freertos_fpga build_cheribsd_fpga build_cheribsd_fpga_device_trees select_de10_latest_local generate_fpga_dir`
+After these have been completed, the generated folder will have everything you need to run the system on FPGA.
+It expects the FPGA to have a hard Arm core, with am 'fmem' driver (which effectively requires it to run a specific FreeBSD branch published here <https://github.com/CTSRD-CHERI/freebsd-morello/tree/stratix10>), running the tinyemu peripheral emulator that services requests from the soft Toooba core.
+[`soc/fpga/cl-runscripts`](./soc/fpga/cl-runscripts) contains a set of runscripts that I used on the CL infrastructure.
+These scripts are designed to be included in the generated folder and run from the hard Arm core, assuming the contents of the generated folder are imported on the Arm system as `/root/sws35-stuff`.
+
+- `arm_debug_cheribsd_boot_{1,2}core.sh` boot the soft core into CheriBSD using 1 or 2 cores under `gdb`. Normal system interactions are not possible once booted, but crashes or exceptions will be intercepted for debugging.
+- `arm_debug_freertos_1core.sh` is the same but for CheriFreeRTOS.
+- `arm_run_cheribsd_1core.sh` boots the soft core into CheriBSD with only 1 core enabled and tracked by OpenOCD. It uses `cu` to allow interactive control of the system once booted (make sure to press enter a few times after `cu` opens so it begins polling the UART and allows the soft core to boot)
+- `bench_run_cheribsd_1core{,_noiocap}.sh` boots the soft core into CheriBSD with both cores tracked by OpenOCD and only 1 core enabled. I'm not sure if this is usefully different to `arm_run_...` but it might be---OpenOCD is weird. The `noiocap` variant is identical except it runs `tinyemu` with the `-I` switch that disables IOCaps at the peripheral level. CheriBSD will detect this and automatically fall back to the default drivers.
