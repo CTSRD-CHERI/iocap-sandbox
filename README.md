@@ -13,8 +13,9 @@ If checking out all content, I recommend using `--depth=1` to avoid downloading 
 $ git submodule update --init --recursive --depth=1
 ```
 
-TODO theturboturnip/cheribsd and theturboturnip/tinyemu-virtio should be migrated over to CTSRD-CHERI. The others may be less consequential?
-
+Note: my full development history for CheriBSD and tinyemu can be found in my forks: [theturboturnip/cheribsd](https://github.com/theturboturnip/cheribsd) and [theturboturnip/tinyemu-virtio](https://github.com/theturboturnip/tinyemu-virtio), but I have migrated this repo to use archive branches in the main CTSRD-CHERI versions of those repos.
+Similarly, I have used personal forks of [cheri-compressed-cap](https://github.com/theturboturnip/cheri-compressed-cap/) and [konata](https://github.com/theturboturnip/konata).
+The former has an open PR on the CTSRD-CHERI base [here](https://github.com/CTSRD-CHERI/cheri-compressed-cap/pull/36) but may not end up merged.
 
 ## Dependencies
 
@@ -52,10 +53,6 @@ $ just install_venv             # Set up Python using UV
 ```
 
 # Experiments
-
-TODO write a bit about this, explain the original results for the thesis are in results/thesis, explain that they can be replicated and compared.
-
-TODO write a script that compares results
 
 ## Chapter 4 - NVMe Simulations
 
@@ -199,7 +196,6 @@ cheriv9.length_align_unified
 
 CHERI ISAv9 scans, both "legacy" (with a bespoke scanning function for the format) and "unified" (using a generic scanning function over a capability trait), which return the same results.
 Implemented using the canonical [cheri-compressed-cap](https://github.com/CTSRD-CHERI/cheri-compressed-cap) C library, specifically [my fork](https://github.com/theturboturnip/cheri-compressed-cap) with Rust bindings.
-**TODO get the Rust bindings upstreamed**
 
 ```
 rv64y.base_align_legacy
@@ -211,7 +207,6 @@ rv64y.length_align_unified
 Scans for the RISC-V RV64Y format, both "legacy" (with a bespoke scanning function for the format) and "unified" (using a generic scanning function over a capability trait), which return the same results.
 Identical to CHERI ISAv9, though the internal implementation is slightly different (I believe the subnormal or "internal exponent" flag is inverted, for example).
 Implemented using the canonical [cheri-compressed-cap](https://github.com/CTSRD-CHERI/cheri-compressed-cap) C library, specifically [my fork](https://github.com/theturboturnip/cheri-compressed-cap) with Rust bindings.
-**TODO get the Rust bindings upstreamed**
 
 ```
 cheri256.base_align_legacy
@@ -223,7 +218,6 @@ cheri256.length_align_unified
 Scans for the CHERI-256 format, both "legacy" (with a bespoke scanning function for the format) and "unified" (using a generic scanning function over a capability trait), which return the same results.
 Full precision throughout, as expected from the larger format.
 Implemented using the canonical [cheri-compressed-cap](https://github.com/CTSRD-CHERI/cheri-compressed-cap) C library, specifically [my fork](https://github.com/theturboturnip/cheri-compressed-cap) with Rust bindings.
-**TODO get the Rust bindings upstreamed**
 
 ```
 iocap2024_11.base_align_legacy
@@ -521,9 +515,10 @@ $ just soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/test-soc-ver >/dev/null
 $ just soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/regen-tb-paper-reports
 ```
 
-A few UVMRollingUploadRevokeMMIOBenchmark tests may fail, which is fine - these are the rolling open-close tests that fail when the TODO why? I think it's a collision thing, like one state machine moves too quickly or things complete too quickly...
+A few UVMRollingUploadRevokeMMIOBenchmark tests may fail, which is fine - these are the rolling open-close tests that I believe fail when the rolling-upload outpaces the rolling-revoke.
 
-TODO describe konata, which was used to generate figure 7.4
+The Konata tool was used to generate figure 7.4 - specifically, [my fork](https://github.com/theturboturnip/konata) that adds support for visualizing 'events' from the command stream.
+Konata traces can be extracted from the tests by piping the `just` invocation into `soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/sanitize_konata.py`, which will pull out Konata traces from stdout, separate them, filter out unwanted traces, and then place them into files.
 
 [`results/hardware_latency.toml`](./soc/common/de10pro-cheri-bgas/bluespec/IOCapAxi/testbenches/results/hardware_latency.toml) is used to generate table 7.2, figure 7.5, and tables 7.4 and 7.5. 
 
@@ -545,7 +540,7 @@ The results will be stored in [`IOCapAxi/synths/hardware_synths.toml`](./soc/com
 ## Chapter 7 - Full-System Build
 
 This can be split into two steps:
-1. Build the FPGA bitfile itself (takes a long time) TODO THIS DOESNT WORK
+1. Build the FPGA bitfile itself (takes a long time). This requires a Quartus 23.2pro installation and license.
    ```bash
    $ just build_de10_bitfiles
    ```
