@@ -38,3 +38,7 @@
 	path = soc/common/tinyemu-virtio
 	url = https://github.com/CTSRD-CHERI/tinyemu-virtio
 	branch = sws35-iocaps
+[submodule "os-cheribsd/cheribsd"]
+	path = os-cheribsd/cheribsd
+	url = https://github.com/CTSRD-CHERI/cheribsd/
+	branch = sws35-iocaps-dev
