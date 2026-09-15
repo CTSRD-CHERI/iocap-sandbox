@@ -19,9 +19,6 @@
 [submodule "konata"]
 	path = konata
 	url = https://github.com/theturboturnip/konata.git
-[submodule "os-cheribsd/cheribsd"]
-	path = os-cheribsd/cheribsd
-	url = https://github.com/theturboturnip/cheribsd
 [submodule "os-cheribsd/cheribuild"]
 	path = os-cheribsd/cheribuild
 	url = https://github.com/CTSRD-CHERI/cheribuild
