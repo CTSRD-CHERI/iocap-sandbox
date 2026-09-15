@@ -37,6 +37,3 @@
 [submodule "os-freertos/freertos"]
 	path = os-freertos/freertos
 	url = git@github.com:CTSRD-CHERI/FreeRTOS
-[submodule "tinyemu-virtio"]
-	path = soc/common/tinyemu-virtio
-	url = https://github.com/theturboturnip/tinyemu-virtio
