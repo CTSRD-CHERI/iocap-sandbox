@@ -37,3 +37,7 @@
 [submodule "os-freertos/freertos"]
 	path = os-freertos/freertos
 	url = git@github.com:CTSRD-CHERI/FreeRTOS
+[submodule "soc/common/tinyemu-virtio"]
+	path = soc/common/tinyemu-virtio
+	url = https://github.com/CTSRD-CHERI/tinyemu-virtio
+	branch = sws35-iocaps
